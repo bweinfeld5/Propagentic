@@ -1,75 +1,189 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // ===== HELPER FUNCTIONS =====
+    
     // Check if user is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
     
-    // Check if the requesting user is the owner of a document (e.g., user profile)
+    // Check if the requesting user is the owner of a document
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
     
-    // Check if the requesting user is the landlord linked to a resource (e.g., property)
-    function isResourceLandlord() {
-        return isAuthenticated() && resource.data.landlordId == request.auth.uid;
+    // Get a user document and check if it has a specific role
+    function getUserRole(userId) {
+      let user = get(/databases/$(database)/documents/users/$(userId));
+      return user.data.role;
     }
     
-    // Check if the requesting user is a tenant linked to a resource (e.g., ticket)
-    function isResourceTenant() {
-        return isAuthenticated() && resource.data.submittedBy == request.auth.uid;
-    }
-    
-    // Check if user has a specific role in their user document
+    // Check if the current user has a specific role
     function hasRole(role) {
-        return isAuthenticated() && 
-               exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == role;
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             getUserRole(request.auth.uid) == role;
     }
     
-    // User profiles
+    // Check if the requesting user is the landlord for a property
+    function isPropertyLandlord(propertyId) {
+      let property = get(/databases/$(database)/documents/properties/$(propertyId));
+      return property.data.landlordId == request.auth.uid;
+    }
+    
+    // Check if the requesting user is a tenant of a property
+    function isPropertyTenant(propertyId) {
+      let property = get(/databases/$(database)/documents/properties/$(propertyId));
+      return request.auth.uid in property.data.tenantIds;
+    }
+    
+    // Check if the requesting user is the submitter of a ticket
+    function isTicketSubmitter(ticketId) {
+      let ticket = get(/databases/$(database)/documents/tickets/$(ticketId));
+      return ticket.data.submittedBy == request.auth.uid;
+    }
+    
+    // Check if the requesting user is the assigned contractor for a ticket
+    function isAssignedContractor(ticketId) {
+      let ticket = get(/databases/$(database)/documents/tickets/$(ticketId));
+      return ticket.data.assignedTo == request.auth.uid;
+    }
+    
+    // Check if the requesting user is the landlord for a ticket's property
+    function isTicketPropertyLandlord(ticketId) {
+      let ticket = get(/databases/$(database)/documents/tickets/$(ticketId));
+      let property = get(/databases/$(database)/documents/properties/$(ticket.data.propertyId));
+      return property.data.landlordId == request.auth.uid;
+    }
+
+    // ===== COLLECTION RULES =====
+    
+    // Users collection
     match /users/{userId} {
-      // Users can read their own profile
-      allow read: if isOwner(userId);
-      // Anyone authenticated can create a user profile (during signup)
-      allow create: if isAuthenticated();
-      // Users can update their own profile
-      allow update: if isOwner(userId);
-      // Deletion is typically disallowed
-      allow delete: if false; 
+      // Read: User can read their own profile
+      // Landlords can read profiles of their tenants and contractors they work with
+      allow read: if isOwner(userId) || 
+                   (hasRole('landlord') && isLandlordForUser(userId));
+      
+      // Create: Any authenticated user can create their own profile
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      
+      // Update: User can update their own profile
+      // But can't change role after creation
+      allow update: if isOwner(userId) && 
+                     (request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['name', 'phone', 'linkedTo', 'profileComplete']) || 
+                      request.resource.data.role == resource.data.role);
+      
+      // No direct deletion allowed
+      allow delete: if false;
+      
+      // Helper function to check if the landlord is associated with this user
+      function isLandlordForUser(userId) {
+        let user = get(/databases/$(database)/documents/users/$(userId));
+        return user.data.landlordId == request.auth.uid;
+      }
     }
     
-    // Tickets
-    match /tickets/{ticketId} {
-      // Tenant who submitted or landlord linked to the property (need property link) can read
-      // Assuming ticket might have landlordId or propertyId in the future
-      // For now, allow submitter and any landlord to read (adjust later for property linking)
-      allow read: if isAuthenticated() && (isResourceTenant() || hasRole('landlord'));
-      // Any authenticated user can create a ticket (tenants submit)
-      allow create: if isAuthenticated();
-      // Submitter or any landlord can update (e.g., status)
-      allow update: if isAuthenticated() && (isResourceTenant() || hasRole('landlord'));
-      allow delete: if false; 
-    }
-    
-    // Properties
+    // Properties collection
     match /properties/{propertyId} {
-      // Only the landlord linked to the property can read it
-      allow read: if isResourceLandlord();
-      // Only users with the landlord role can create properties
-      allow create: if hasRole('landlord');
-      // Only the landlord linked to the property can update it
-      allow update: if isResourceLandlord();
-      // Disallow deletion for now
-      allow delete: if false; 
+      // Read: Landlord who owns the property or tenants of the property can read
+      allow read: if isAuthenticated() && 
+                   (isPropertyLandlord(propertyId) || isPropertyTenant(propertyId));
+      
+      // Create: Only landlords can create properties
+      allow create: if hasRole('landlord') && 
+                     request.resource.data.landlordId == request.auth.uid;
+      
+      // Update: Only landlord who owns the property can update
+      allow update: if isPropertyLandlord(propertyId);
+      
+      // No direct deletion allowed
+      allow delete: if false;
     }
     
-    // Contractors (Example - adjust as needed)
-    match /contractors/{contractorId} {
-      // Allow landlords and potentially contractors themselves to read
-      allow read: if hasRole('landlord') || (hasRole('contractor') && isOwner(contractorId));
-      allow write: if false; // Maybe only admins or landlords add contractors
+    // Maintenance Tickets collection
+    match /tickets/{ticketId} {
+      // Read: Submitter, assigned contractor, or landlord of the property can read
+      allow read: if isAuthenticated() && 
+                   (isTicketSubmitter(ticketId) || 
+                    isAssignedContractor(ticketId) || 
+                    isTicketPropertyLandlord(ticketId));
+      
+      // Create: Tenants can create tickets
+      allow create: if hasRole('tenant') && 
+                     request.resource.data.submittedBy == request.auth.uid &&
+                     isPropertyTenant(request.resource.data.propertyId);
+      
+      // Update:
+      // - Tenant who submitted can update description/photos/cancel (but not status)
+      // - Assigned contractor can update status to in_progress or completed
+      // - Landlord of the property can update all fields
+      allow update: if isAuthenticated() && (
+                     // Tenant updates (limited fields)
+                     (isTicketSubmitter(ticketId) && 
+                      request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['description', 'photoUrl', 'timestamps']) &&
+                      request.resource.data.status == resource.data.status) ||
+                     // Contractor updates (status only)
+                     (isAssignedContractor(ticketId) &&
+                      request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['status', 'timestamps']) &&
+                      (request.resource.data.status == 'in_progress' || 
+                       request.resource.data.status == 'completed')) ||
+                     // Landlord updates (all fields)
+                     isTicketPropertyLandlord(ticketId)
+                    );
+      
+      // No direct deletion allowed
+      allow delete: if false;
+    }
+    
+    // Landlord Profiles collection
+    match /landlordProfiles/{landlordId} {
+      // Read: Owner or associated tenants/contractors can read
+      allow read: if isAuthenticated() && 
+                   (isOwner(landlordId) || 
+                    isLinkedToLandlord(landlordId));
+      
+      // Create: Only the landlord themselves can create their profile
+      allow create: if isOwner(landlordId) && hasRole('landlord');
+      
+      // Update: Only the landlord themselves can update their profile
+      allow update: if isOwner(landlordId);
+      
+      // No direct deletion allowed
+      allow delete: if false;
+      
+      // Helper function to check if user is linked to this landlord
+      function isLinkedToLandlord(landlordId) {
+        let user = get(/databases/$(database)/documents/users/$(request.auth.uid));
+        return user.data.landlordId == landlordId;
+      }
+    }
+    
+    // Contractor Profiles collection
+    match /contractorProfiles/{contractorId} {
+      // Read: Owner or landlords who have them in their rolodex can read
+      allow read: if isAuthenticated() && 
+                   (isOwner(contractorId) || 
+                    isContractorInLandlordRolodex(contractorId));
+      
+      // Create: Only the contractor themselves can create their profile
+      allow create: if isOwner(contractorId) && hasRole('contractor');
+      
+      // Update: Only the contractor themselves can update their profile
+      allow update: if isOwner(contractorId);
+      
+      // No direct deletion allowed
+      allow delete: if false;
+      
+      // Helper function to check if contractor is in landlord's rolodex
+      function isContractorInLandlordRolodex(contractorId) {
+        let landlordProfile = get(/databases/$(database)/documents/landlordProfiles/$(request.auth.uid));
+        return contractorId in landlordProfile.data.contractors;
+      }
     }
   }
 } 
