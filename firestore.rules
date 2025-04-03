@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if the requesting user is the owner of a document (e.g., user profile)
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Check if the requesting user is the landlord linked to a resource (e.g., property)
+    function isResourceLandlord() {
+        return isAuthenticated() && resource.data.landlordId == request.auth.uid;
+    }
+    
+    // Check if the requesting user is a tenant linked to a resource (e.g., ticket)
+    function isResourceTenant() {
+        return isAuthenticated() && resource.data.submittedBy == request.auth.uid;
+    }
+    
+    // Check if user has a specific role in their user document
+    function hasRole(role) {
+        return isAuthenticated() && 
+               exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == role;
+    }
+    
+    // User profiles
+    match /users/{userId} {
+      // Users can read their own profile
+      allow read: if isOwner(userId);
+      // Anyone authenticated can create a user profile (during signup)
+      allow create: if isAuthenticated();
+      // Users can update their own profile
+      allow update: if isOwner(userId);
+      // Deletion is typically disallowed
+      allow delete: if false; 
+    }
+    
+    // Tickets
+    match /tickets/{ticketId} {
+      // Tenant who submitted or landlord linked to the property (need property link) can read
+      // Assuming ticket might have landlordId or propertyId in the future
+      // For now, allow submitter and any landlord to read (adjust later for property linking)
+      allow read: if isAuthenticated() && (isResourceTenant() || hasRole('landlord'));
+      // Any authenticated user can create a ticket (tenants submit)
+      allow create: if isAuthenticated();
+      // Submitter or any landlord can update (e.g., status)
+      allow update: if isAuthenticated() && (isResourceTenant() || hasRole('landlord'));
+      allow delete: if false; 
+    }
+    
+    // Properties
+    match /properties/{propertyId} {
+      // Only the landlord linked to the property can read it
+      allow read: if isResourceLandlord();
+      // Only users with the landlord role can create properties
+      allow create: if hasRole('landlord');
+      // Only the landlord linked to the property can update it
+      allow update: if isResourceLandlord();
+      // Disallow deletion for now
+      allow delete: if false; 
+    }
+    
+    // Contractors (Example - adjust as needed)
+    match /contractors/{contractorId} {
+      // Allow landlords and potentially contractors themselves to read
+      allow read: if hasRole('landlord') || (hasRole('contractor') && isOwner(contractorId));
+      allow write: if false; // Maybe only admins or landlords add contractors
+    }
+  }
+} 
