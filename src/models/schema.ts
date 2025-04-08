@@ -88,7 +88,8 @@ export type TicketStatus =
   | 'in_progress' 
   | 'scheduled'
   | 'completed' 
-  | 'cancelled';
+  | 'cancelled'
+  | 'classified';
 
 /**
  * Landlord profile interface - extends information beyond the basic user

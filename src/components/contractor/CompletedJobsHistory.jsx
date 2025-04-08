@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronUpIcon, ChevronDownIcon, CheckCircleIcon, SearchIcon } from '@heroicons/react/solid';
+import { ChevronUpIcon, ChevronDownIcon, CheckCircleIcon, MagnifyingGlassIcon as SearchIcon } from '@heroicons/react/24/solid';
 
 const CompletedJobsHistory = ({ completedJobs = [] }) => {
   const [searchTerm, setSearchTerm] = useState('');

@@ -4,9 +4,9 @@ import { useAuth } from '../../context/AuthContext';
 import { 
   UserCircleIcon, 
   CogIcon, 
-  LogoutIcon,
-  SupportIcon
-} from '@heroicons/react/outline';
+  ArrowRightOnRectangleIcon as LogoutIcon,
+  QuestionMarkCircleIcon
+} from '@heroicons/react/24/outline';
 
 const UserMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -117,7 +117,7 @@ const UserMenu = () => {
               role="menuitem"
               onClick={() => setIsOpen(false)}
             >
-              <SupportIcon className="mr-3 h-5 w-5 text-gray-400" aria-hidden="true" />
+              <QuestionMarkCircleIcon className="mr-3 h-5 w-5 text-gray-400" aria-hidden="true" />
               Support
             </Link>
           </div>

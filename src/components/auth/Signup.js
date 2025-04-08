@@ -1,194 +1,378 @@
-import React, { useState, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth, ROLES } from 'context/AuthContext';
+import React, { useState } from 'react';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { auth, db } from '../../firebase/config';
+import { Link, useNavigate } from 'react-router-dom';
 
-const Signup = () => {
-  const emailRef = useRef();
-  const passwordRef = useRef();
-  const passwordConfirmRef = useRef();
-  const nameRef = useRef();
-  const { signup } = useAuth();
-  const [role, setRole] = useState(ROLES.TENANT);
-  const [error, setError] = useState('');
+const SignUp = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [role, setRole] = useState('tenant');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
   const navigate = useNavigate();
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  // Additional fields for contractors
+  const [specialties, setSpecialties] = useState([]);
+  const [companyName, setCompanyName] = useState('');
+  
+  // Specialties options for contractors
+  const specialtyOptions = [
+    'plumbing', 'electrical', 'hvac', 'carpentry', 
+    'painting', 'roofing', 'landscaping', 'general'
+  ];
 
-    if (passwordRef.current.value !== passwordConfirmRef.current.value) {
-      return setError('Passwords do not match');
+  const handleSpecialtyChange = (e) => {
+    const { value, checked } = e.target;
+    if (checked) {
+      setSpecialties([...specialties, value]);
+    } else {
+      setSpecialties(specialties.filter(specialty => specialty !== value));
     }
+  };
 
+  const handleSignUp = async (e) => {
+    e.preventDefault();
+    
+    // Reset error
+    setError(null);
+    
+    // Validation
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+    
+    // Additional validation for contractors
+    if (role === 'contractor' && specialties.length === 0) {
+      setError('Please select at least one specialty');
+      return;
+    }
+    
     try {
-      setError('');
       setLoading(true);
       
-      // Create the user in Firebase Auth
-      const userCredential = await signup(emailRef.current.value, passwordRef.current.value, role);
+      // Create user account
+      const userCredential = await createUserWithEmailAndPassword(
+        auth, 
+        email, 
+        password
+      );
       
-      // Save the user data in Firestore
-      await setDoc(doc(db, 'users', userCredential.user.uid), {
-        email: emailRef.current.value,
-        name: nameRef.current.value,
-        role: role,
-        onboardingComplete: false,
-        createdAt: new Date().toISOString()
-      });
+      // Update profile with display name
+      await updateProfile(userCredential.user, { displayName });
       
-      navigate('/onboarding');
-    } catch (error) {
-      setError('Failed to create an account: ' + error.message);
+      // Prepare user data based on role
+      const userData = {
+        uid: userCredential.user.uid,
+        email,
+        displayName,
+        role,
+        phoneNumber: phoneNumber || null,
+        createdAt: new Date().toISOString(),
+        notificationPreferences: {
+          email: true,
+          push: true,
+          categories: getDefaultCategoriesByRole(role)
+        }
+      };
+      
+      // Add role-specific data
+      if (role === 'contractor') {
+        userData.specialties = specialties;
+        userData.companyName = companyName || null;
+        userData.verified = false; // Contractors need verification
+      } else if (role === 'landlord') {
+        userData.properties = [];
+      } else if (role === 'tenant') {
+        userData.properties = [];
+        userData.leases = [];
+      }
+      
+      // Save user data to Firestore
+      await setDoc(doc(db, 'users', userCredential.user.uid), userData);
+      
+      // Redirect to appropriate dashboard
+      navigate(`/${role}/dashboard`);
+      
+    } catch (err) {
+      console.error('Sign up error:', err);
+      setError(err.message || 'Failed to create account');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
-  }
+  };
+  
+  // Returns default notification categories based on user role
+  const getDefaultCategoriesByRole = (userRole) => {
+    switch (userRole) {
+      case 'tenant':
+        return {
+          maintenance: true,
+          payments: true,
+          property: true,
+          announcements: true
+        };
+      case 'landlord':
+        return {
+          maintenance: true,
+          payments: true,
+          tenants: true,
+          contractors: true,
+          property: true
+        };
+      case 'contractor':
+        return {
+          jobs: true,
+          payments: true,
+          reviews: true
+        };
+      default:
+        return {};
+    }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create your account
-          </h2>
-        </div>
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-            <span className="block sm:inline">{error}</span>
+    <div className="flex min-h-screen bg-gray-50">
+      <div className="w-full max-w-md mx-auto pt-12 px-6">
+        <div className="bg-white rounded-xl shadow-lg p-8">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Create an Account</h1>
+            <p className="text-gray-600 mt-2">Join Propagentic to manage your properties</p>
           </div>
-        )}
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <input type="hidden" name="remember" defaultValue="true" />
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="name" className="sr-only">
-                Full Name
-              </label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Full Name"
-                ref={nameRef}
-              />
+          
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
+              {error}
             </div>
-            <div>
-              <label htmlFor="email-address" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="email-address"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
-                ref={emailRef}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
-                ref={passwordRef}
-              />
-            </div>
-            <div>
-              <label htmlFor="password-confirm" className="sr-only">
-                Confirm Password
-              </label>
-              <input
-                id="password-confirm"
-                name="password-confirm"
-                type="password"
-                autoComplete="new-password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Confirm Password"
-                ref={passwordConfirmRef}
-              />
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700">Select your role</label>
-            <div className="mt-2 space-y-2">
-              <div className="flex items-center">
-                <input
-                  id="role-tenant"
-                  name="role"
-                  type="radio"
-                  checked={role === ROLES.TENANT}
-                  onChange={() => setRole(ROLES.TENANT)}
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
-                />
-                <label htmlFor="role-tenant" className="ml-3 block text-sm font-medium text-gray-700">
-                  Tenant
+          )}
+          
+          <form onSubmit={handleSignUp}>
+            <div className="space-y-6">
+              {/* User Role Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  I am a:
                 </label>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <input 
+                      type="radio" 
+                      id="role-tenant" 
+                      name="role" 
+                      value="tenant"
+                      checked={role === 'tenant'}
+                      onChange={() => setRole('tenant')}
+                      className="sr-only"
+                    />
+                    <label 
+                      htmlFor="role-tenant"
+                      className={`block w-full py-2 px-3 text-center rounded-md cursor-pointer border ${
+                        role === 'tenant' 
+                          ? 'bg-blue-50 border-blue-500 text-blue-700' 
+                          : 'border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      Tenant
+                    </label>
+                  </div>
+                  <div>
+                    <input 
+                      type="radio" 
+                      id="role-landlord" 
+                      name="role" 
+                      value="landlord"
+                      checked={role === 'landlord'}
+                      onChange={() => setRole('landlord')}
+                      className="sr-only"
+                    />
+                    <label 
+                      htmlFor="role-landlord"
+                      className={`block w-full py-2 px-3 text-center rounded-md cursor-pointer border ${
+                        role === 'landlord' 
+                          ? 'bg-blue-50 border-blue-500 text-blue-700' 
+                          : 'border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      Landlord
+                    </label>
+                  </div>
+                  <div>
+                    <input 
+                      type="radio" 
+                      id="role-contractor" 
+                      name="role" 
+                      value="contractor"
+                      checked={role === 'contractor'}
+                      onChange={() => setRole('contractor')}
+                      className="sr-only"
+                    />
+                    <label 
+                      htmlFor="role-contractor"
+                      className={`block w-full py-2 px-3 text-center rounded-md cursor-pointer border ${
+                        role === 'contractor' 
+                          ? 'bg-blue-50 border-blue-500 text-blue-700' 
+                          : 'border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      Contractor
+                    </label>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center">
-                <input
-                  id="role-landlord"
-                  name="role"
-                  type="radio"
-                  checked={role === ROLES.LANDLORD}
-                  onChange={() => setRole(ROLES.LANDLORD)}
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
-                />
-                <label htmlFor="role-landlord" className="ml-3 block text-sm font-medium text-gray-700">
-                  Landlord
+              
+              {/* Basic Info */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Full Name
                 </label>
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="John Doe"
+                />
               </div>
-              <div className="flex items-center">
-                <input
-                  id="role-contractor"
-                  name="role"
-                  type="radio"
-                  checked={role === ROLES.CONTRACTOR}
-                  onChange={() => setRole(ROLES.CONTRACTOR)}
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
-                />
-                <label htmlFor="role-contractor" className="ml-3 block text-sm font-medium text-gray-700">
-                  Contractor
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
                 </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="your@email.com"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="(555) 123-4567"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Min. 6 characters"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Confirm your password"
+                />
+              </div>
+              
+              {/* Contractor-specific fields */}
+              {role === 'contractor' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Company Name (optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Your company name"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Specialties (select all that apply)
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {specialtyOptions.map((specialty) => (
+                        <div key={specialty} className="flex items-start">
+                          <input
+                            id={`specialty-${specialty}`}
+                            name="specialties"
+                            type="checkbox"
+                            value={specialty}
+                            checked={specialties.includes(specialty)}
+                            onChange={handleSpecialtyChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded mt-1"
+                          />
+                          <label
+                            htmlFor={`specialty-${specialty}`}
+                            className="ml-2 block text-sm text-gray-700 capitalize"
+                          >
+                            {specialty}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              <div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`w-full py-3 px-4 rounded-md text-white font-medium ${
+                    loading 
+                      ? 'bg-blue-400 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+                >
+                  {loading ? 'Creating account...' : 'Create Account'}
+                </button>
               </div>
             </div>
+          </form>
+          
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Already have an account?{' '}
+              <Link to="/login" className="text-blue-600 hover:underline">
+                Sign in
+              </Link>
+            </p>
           </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Sign up
-            </button>
-          </div>
-        </form>
-        <div className="text-center mt-4">
-          <p className="text-sm text-gray-600">
-            Already have an account?{' '}
-            <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
-              Sign in
-            </Link>
-          </p>
         </div>
       </div>
     </div>
   );
 };
 
-export default Signup; 
+export default SignUp; 

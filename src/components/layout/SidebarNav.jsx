@@ -3,19 +3,19 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
   HomeIcon,
-  ClipboardCheckIcon, 
-  SupportIcon,
-  CogIcon,
-  MenuIcon,
-  XIcon,
+  ClipboardDocumentCheckIcon as ClipboardCheckIcon, 
+  QuestionMarkCircleIcon,
+  Cog6ToothIcon as CogIcon,
+  Bars3Icon as MenuIcon,
+  XMarkIcon as XIcon,
   UserCircleIcon,
-  LogoutIcon,
+  ArrowRightOnRectangleIcon as LogoutIcon,
   ClockIcon,
   DocumentTextIcon,
-  OfficeBuildingIcon,
-  MailIcon,
+  BuildingOfficeIcon as OfficeBuildingIcon,
+  EnvelopeIcon as MailIcon,
   UsersIcon
-} from '@heroicons/react/outline';
+} from '@heroicons/react/24/outline';
 
 const SidebarNav = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -34,19 +34,21 @@ const SidebarNav = () => {
 
   // Define navigation items based on user type
   const navigation = useMemo(() => {
-    const userType = userProfile?.userType;
+    // Get user type from either userType or role field
+    const userType = userProfile?.userType || userProfile?.role;
+    console.log('SidebarNav - User type/role for navigation:', userType);
     
     // Common navigation items for all users
     const commonItems = [
       { name: 'Profile', href: '/profile', icon: UserCircleIcon },
-      { name: 'Support', href: '/support', icon: SupportIcon },
+      { name: 'Support', href: '/support', icon: QuestionMarkCircleIcon },
       { name: 'Settings', href: '/settings', icon: CogIcon },
     ];
     
     // Tenant-specific navigation
     if (userType === 'tenant') {
       return [
-        { name: 'Dashboard', href: '/tenant', icon: HomeIcon },
+        { name: 'Dashboard', href: '/tenant/dashboard', icon: HomeIcon },
         { name: 'Maintenance', href: '/maintenance/my-requests', icon: ClipboardCheckIcon },
         ...commonItems
       ];
@@ -55,7 +57,7 @@ const SidebarNav = () => {
     // Landlord-specific navigation
     else if (userType === 'landlord') {
       return [
-        { name: 'Dashboard', href: '/landlord', icon: HomeIcon },
+        { name: 'Dashboard', href: '/landlord/dashboard', icon: HomeIcon },
         { name: 'Properties', href: '/landlord/properties', icon: OfficeBuildingIcon },
         { name: 'Tenants', href: '/landlord/tenants', icon: UsersIcon },
         { name: 'Maintenance', href: '/landlord/maintenance', icon: ClipboardCheckIcon },
@@ -66,10 +68,10 @@ const SidebarNav = () => {
     // Contractor-specific navigation
     else if (userType === 'contractor') {
       return [
-        { name: 'Dashboard', href: '/contractor', icon: HomeIcon },
+        { name: 'Dashboard', href: '/contractor/dashboard', icon: HomeIcon },
         { name: 'Job History', href: '/contractor/history', icon: ClockIcon },
         { name: 'Profile', href: '/contractor/profile', icon: UserCircleIcon },
-        { name: 'Support', href: '/support', icon: SupportIcon },
+        { name: 'Support', href: '/support', icon: QuestionMarkCircleIcon },
         { name: 'Settings', href: '/settings', icon: CogIcon },
       ];
     }
@@ -83,10 +85,13 @@ const SidebarNav = () => {
 
   // Check if the current path matches the nav item
   const isActive = (path) => {
-    if (path === `/${userProfile?.userType}` && location.pathname === `/${userProfile?.userType}`) {
+    const userRole = userProfile?.userType || userProfile?.role;
+    const dashboardPath = `/${userRole}/dashboard`;
+    
+    if (path === dashboardPath && location.pathname === path) {
       return true;
     }
-    return location.pathname.startsWith(path) && path !== `/${userProfile?.userType}`;
+    return location.pathname.startsWith(path) && path !== dashboardPath;
   };
 
   // Get classes for nav item based on active state
@@ -143,7 +148,7 @@ const SidebarNav = () => {
             {/* User info in mobile view */}
             <div className="px-4 py-2 border-b border-teal-700">
               <div className="text-sm font-semibold text-white">{userDisplayName}</div>
-              <div className="text-xs text-teal-200 capitalize">{userProfile?.userType || 'User'}</div>
+              <div className="text-xs text-teal-200 capitalize">{userProfile?.userType || userProfile?.role || 'User'}</div>
             </div>
             
             <div className="mt-5 flex-1 h-0 overflow-y-auto">
@@ -185,7 +190,7 @@ const SidebarNav = () => {
             {/* User info in desktop view */}
             <div className="px-4 py-4 mt-2 border-b border-teal-700">
               <div className="text-sm font-semibold text-white">{userDisplayName}</div>
-              <div className="text-xs text-teal-200 capitalize">{userProfile?.userType || 'User'}</div>
+              <div className="text-xs text-teal-200 capitalize">{userProfile?.userType || userProfile?.role || 'User'}</div>
             </div>
             
             <nav className="mt-6 flex-1 px-4 space-y-1">

@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { BellIcon, UserCircleIcon } from '@heroicons/react/outline';
+import { UserCircleIcon } from '@heroicons/react/24/outline';
+import NotificationBell from '../notifications/NotificationBell';
+import NotificationPanel from './NotificationPanel';
 
 // HeaderNav component with sidebar toggle removed
 const HeaderNav = () => {
   const { userProfile, logout } = useAuth();
+  const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
 
   // Get dashboard title based on user type
   const getDashboardTitle = () => {
@@ -40,12 +43,7 @@ const HeaderNav = () => {
 
       {/* Right side: Notifications and Profile Dropdown */}
       <div className="flex items-center space-x-4">
-        <button className="relative text-slate-500 hover:text-slate-700 p-1 rounded-full hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
-          <span className="sr-only">View notifications</span>
-          <BellIcon className="h-6 w-6" aria-hidden="true" />
-          {/* Add notification badge here if needed */}
-          {/* <span className="absolute top-0 right-0 block h-2 w-2 rounded-full ring-2 ring-white bg-red-400" /> */}
-        </button>
+        <NotificationBell onClick={() => setNotificationPanelOpen(true)} />
 
         {/* Profile Dropdown Placeholder */}
         <div className="relative">
@@ -62,6 +60,12 @@ const HeaderNav = () => {
             </svg>
           </button>
         </div>
+
+        {/* Notification Panel */}
+        <NotificationPanel 
+          isOpen={notificationPanelOpen} 
+          onClose={() => setNotificationPanelOpen(false)} 
+        />
       </div>
     </header>
   );

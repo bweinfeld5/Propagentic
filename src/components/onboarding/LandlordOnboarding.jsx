@@ -38,12 +38,28 @@ const LandlordOnboarding = () => {
 
   // Redirect if not a landlord or already onboarded
   useEffect(() => {
+    console.log('LandlordOnboarding - Mount State:', {
+      currentUser: currentUser?.uid,
+      userProfile,
+      userType: userProfile?.userType,
+      onboardingComplete: userProfile?.onboardingComplete,
+      path: window.location.pathname
+    });
+
     if (!currentUser) {
+      console.log('LandlordOnboarding - No current user, redirecting to login');
       navigate('/login');
-    } else if (userProfile && userProfile.userType !== 'landlord') {
+    } else if (!userProfile) {
+      console.log('LandlordOnboarding - Waiting for user profile to load...');
+      // Don't redirect, wait for profile to load
+    } else if (userProfile.userType !== 'landlord') {
+      console.log(`LandlordOnboarding - User is not a landlord (${userProfile.userType}), redirecting`);
       navigate(`/${userProfile.userType || 'dashboard'}`); // Redirect non-landlords
-    } else if (userProfile && userProfile.onboardingComplete) {
-      navigate('/landlord'); // Redirect already onboarded landlords
+    } else if (userProfile.onboardingComplete) {
+      console.log('LandlordOnboarding - Onboarding already complete, redirecting to dashboard');
+      navigate('/landlord/dashboard'); // Updated path to match App.js routes
+    } else {
+      console.log('LandlordOnboarding - Ready to show onboarding UI');
     }
   }, [currentUser, userProfile, navigate]);
 
@@ -177,7 +193,7 @@ const LandlordOnboarding = () => {
       
       // 3. Redirect to Landlord Dashboard
       console.log('Redirecting to landlord dashboard...');
-      navigate('/landlord');
+      navigate('/landlord/dashboard');
 
     } catch (error) {
       console.error('Error during landlord onboarding submission:', error);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ClipboardListIcon, ClockIcon, CheckCircleIcon, LightningBoltIcon } from '@heroicons/react/outline';
+import { ClipboardDocumentListIcon as ClipboardListIcon, ClockIcon, CheckCircleIcon, BoltIcon as LightningBoltIcon } from '@heroicons/react/24/outline';
 
 const OverviewCard = ({ title, value, icon: Icon, trend, trendLabel, iconBgColor }) => (
   <div className="bg-white rounded-xl shadow-md p-5 hover:shadow-lg transition-shadow duration-200">

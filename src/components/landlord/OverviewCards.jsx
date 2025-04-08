@@ -1,5 +1,5 @@
 import React from 'react';
-import { HomeIcon, UserGroupIcon, ClipboardListIcon, ChartBarIcon, ClockIcon, CurrencyDollarIcon } from '@heroicons/react/outline';
+import { HomeIcon, UserGroupIcon, ClipboardDocumentListIcon, ChartBarIcon, ClockIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 
 const OverviewCard = ({ title, value, icon: Icon, trend, trendLabel, iconBgColor }) => (
   <div className="bg-white rounded-xl shadow-md p-5 hover:shadow-lg transition-shadow duration-200">
@@ -51,7 +51,7 @@ const OverviewCards = ({ stats }) => {
       <OverviewCard 
         title="Open Requests" 
         value={displayStats.openRequests} 
-        icon={ClipboardListIcon}
+        icon={ClipboardDocumentListIcon}
         iconBgColor="bg-amber-100" 
       />
       <OverviewCard 

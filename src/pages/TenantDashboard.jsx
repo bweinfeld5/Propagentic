@@ -8,7 +8,7 @@ import RequestHistory from '../components/tenant/RequestHistory';
 import HeaderBar from '../components/layout/HeaderBar';
 import NotificationPanel from '../components/layout/NotificationPanel';
 import { Toaster, toast } from 'react-hot-toast';
-import { BellIcon, ExclamationCircleIcon } from '@heroicons/react/outline';
+import { BellIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 
 const TenantDashboard = () => {
   const { currentUser, userProfile } = useAuth();

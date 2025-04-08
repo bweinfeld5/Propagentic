@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import HomeNavLink from '../layout/HomeNavLink';
 
@@ -23,15 +23,29 @@ const OnboardingSurvey = () => {
 
   // Redirect if user is not authenticated
   useEffect(() => {
+    console.log('OnboardingSurvey - Mount State:', {
+      currentUser: currentUser?.uid,
+      userProfile,
+      userType: userProfile?.userType,
+      onboardingComplete: userProfile?.onboardingComplete
+    });
+
     if (!currentUser) {
+      console.log('OnboardingSurvey - No current user, redirecting to login');
       navigate('/login');
-    } else if (userProfile?.onboardingComplete) {
+    } else if (!userProfile) {
+      console.log('OnboardingSurvey - Waiting for user profile to load...');
+      // Don't redirect, wait for profile to load
+    } else if (userProfile.onboardingComplete) {
+      console.log('OnboardingSurvey - Onboarding complete, redirecting to dashboard');
       // Redirect to the appropriate dashboard based on user type
       if (userProfile.userType) {
-        navigate(`/${userProfile.userType}`);
+        navigate(`/${userProfile.userType}/dashboard`);
       } else {
         navigate('/dashboard');
       }
+    } else {
+      console.log('OnboardingSurvey - Ready to show onboarding UI');
     }
   }, [currentUser, userProfile, navigate]);
 
@@ -63,30 +77,69 @@ const OnboardingSurvey = () => {
     setLoading(true);
     
     try {
+      // 1. Update the user document
       const userDocRef = doc(db, 'users', currentUser.uid);
       
-      // Use setDoc with merge option instead of updateDoc
-      await setDoc(userDocRef, {
+      // Create user data with preserved role/userType fields
+      const userData = {
         ...formData,
+        // Preserve existing userType and role values
+        userType: userProfile?.userType || 'tenant',
+        role: userProfile?.role || 'tenant',
         onboardingComplete: true,
         name: `${formData.firstName} ${formData.lastName}`,
-        updatedAt: new Date()
-      }, { merge: true });
+        updatedAt: serverTimestamp()
+      };
+      
+      console.log('Updating user document with data:', userData);
+      
+      // Use setDoc with merge option to update user document
+      await setDoc(userDocRef, userData, { merge: true });
+      console.log('User document updated successfully');
+      
+      // 2. Create a separate tenant profile document
+      if ((userProfile?.userType === 'tenant' || userProfile?.role === 'tenant')) {
+        const tenantProfileRef = doc(db, 'tenantProfiles', currentUser.uid);
+        const tenantProfileData = {
+          userId: currentUser.uid,
+          email: userProfile?.email || currentUser.email,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          phoneNumber: formData.phoneNumber,
+          preferredContactMethod: formData.preferredContactMethod,
+          address: formData.address,
+          propertyType: formData.propertyType,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        };
+        
+        console.log('Creating tenant profile document:', tenantProfileData);
+        await setDoc(tenantProfileRef, tenantProfileData);
+        console.log('Tenant profile document created successfully');
+      }
       
       // Refresh the user profile before redirecting
       const updatedProfile = await fetchUserProfile(currentUser.uid);
-      
-      console.log('Onboarding complete, redirecting to dashboard', updatedProfile);
+      console.log('Onboarding complete, refreshed profile:', updatedProfile);
       
       // Redirect to dashboard based on the updated profile
-      if (updatedProfile && updatedProfile.userType) {
-        navigate(`/${updatedProfile.userType}`);
-      } else {
-        navigate('/dashboard');
-      }
+      const userRole = updatedProfile?.userType || updatedProfile?.role || 'tenant';
+      const redirectPath = `/${userRole}/dashboard`;
+      console.log(`Redirecting to: ${redirectPath}`);
+      navigate(redirectPath);
     } catch (error) {
       console.error('Error saving onboarding data:', error);
-      alert(`Error saving your information: ${error.message}`);
+      
+      // Create a more user-friendly error message
+      let errorMessage = 'An error occurred while saving your information.';
+      
+      if (error.code === 'permission-denied') {
+        errorMessage = 'You do not have permission to complete this action. Please check your account privileges.';
+      } else if (error.code === 'unavailable') {
+        errorMessage = 'The service is temporarily unavailable. Please try again later.';
+      }
+      
+      alert(`Error: ${errorMessage}\n\nDetails: ${error.message}`);
     } finally {
       setLoading(false);
     }

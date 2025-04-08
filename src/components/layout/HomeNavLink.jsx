@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { HomeIcon } from '@heroicons/react/outline';
+import { HomeIcon } from '@heroicons/react/24/outline';
 
 const HomeNavLink = ({ className, showOnAuth = false }) => {
   const { currentUser } = useAuth();

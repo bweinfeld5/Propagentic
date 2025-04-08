@@ -54,8 +54,8 @@ const HeroSection = () => {
             <Link to="/about" className="text-propagentic-neutral-dark dark:text-propagentic-neutral-light hover:text-propagentic-teal transition duration-150">About</Link>
           </div>
           <div className="flex items-center space-x-4">
-            <Link to="/login" className="text-propagentic-teal font-medium hover:text-propagentic-teal-dark transition duration-150">Log in</Link>
-            <Link to="/signup" className="bg-propagentic-teal text-white px-4 py-2 rounded-lg hover:bg-propagentic-teal-dark transform hover:-translate-y-0.5 transition duration-150">Sign up</Link>
+            <Link to="/auth" className="text-propagentic-teal font-medium hover:text-propagentic-teal-dark transition duration-150">Log in</Link>
+            <Link to="/auth?tab=signup" className="bg-propagentic-teal text-white px-4 py-2 rounded-lg hover:bg-propagentic-teal-dark transform hover:-translate-y-0.5 transition duration-150">Sign up</Link>
           </div>
         </div>
       </nav>
@@ -92,7 +92,7 @@ const HeroSection = () => {
             </p>
             <div className="mt-8 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
               <Link 
-                to={`/signup?role=${selectedRole.toLowerCase()}`} 
+                to={`/auth?tab=signup&role=${selectedRole.toLowerCase()}`} 
                 className="bg-propagentic-teal text-white px-8 py-3 rounded-lg font-medium hover:bg-propagentic-teal-dark transform hover:-translate-y-0.5 transition duration-150 text-center"
               >
                 Get Started Free

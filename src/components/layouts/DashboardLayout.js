@@ -60,14 +60,19 @@ const DashboardLayout = () => {
   // Handle onboarding redirect based on user type and completion status
   if (userProfile && userProfile.onboardingComplete === false) {
     console.log('DashboardLayout - Onboarding not complete, redirecting to onboarding');
-    if (isLandlord()) {
+    const userRole = userProfile.userType || userProfile.role;
+    
+    if (isLandlord() || userRole === 'landlord') {
       // If landlord hasn't completed onboarding, redirect to landlord-specific flow
+      console.log('DashboardLayout - Redirecting landlord to onboarding');
       return <Navigate to="/landlord-onboarding" />;
-    } else if (userProfile.userType === 'contractor') {
+    } else if (userProfile.userType === 'contractor' || userProfile.role === 'contractor') {
       // If contractor hasn't completed onboarding, redirect to contractor-specific flow
+      console.log('DashboardLayout - Redirecting contractor to onboarding');
       return <Navigate to="/contractor-onboarding" />;
     } else {
       // For other roles (tenant), redirect to the general onboarding survey
+      console.log('DashboardLayout - Redirecting tenant/other to onboarding');
       return <Navigate to="/onboarding" />;
     }
   }

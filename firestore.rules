@@ -1,189 +1,171 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ===== HELPER FUNCTIONS =====
-    
-    // Check if user is authenticated
-    function isAuthenticated() {
+
+    // 🔐 Auth & Role Helpers
+    function isSignedIn() {
       return request.auth != null;
     }
-    
-    // Check if the requesting user is the owner of a document
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-    
-    // Get a user document and check if it has a specific role
-    function getUserRole(userId) {
-      let user = get(/databases/$(database)/documents/users/$(userId));
-      return user.data.role;
-    }
-    
-    // Check if the current user has a specific role
-    function hasRole(role) {
-      return isAuthenticated() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             getUserRole(request.auth.uid) == role;
-    }
-    
-    // Check if the requesting user is the landlord for a property
-    function isPropertyLandlord(propertyId) {
-      let property = get(/databases/$(database)/documents/properties/$(propertyId));
-      return property.data.landlordId == request.auth.uid;
-    }
-    
-    // Check if the requesting user is a tenant of a property
-    function isPropertyTenant(propertyId) {
-      let property = get(/databases/$(database)/documents/properties/$(propertyId));
-      return request.auth.uid in property.data.tenantIds;
-    }
-    
-    // Check if the requesting user is the submitter of a ticket
-    function isTicketSubmitter(ticketId) {
-      let ticket = get(/databases/$(database)/documents/tickets/$(ticketId));
-      return ticket.data.submittedBy == request.auth.uid;
-    }
-    
-    // Check if the requesting user is the assigned contractor for a ticket
-    function isAssignedContractor(ticketId) {
-      let ticket = get(/databases/$(database)/documents/tickets/$(ticketId));
-      return ticket.data.assignedTo == request.auth.uid;
-    }
-    
-    // Check if the requesting user is the landlord for a ticket's property
-    function isTicketPropertyLandlord(ticketId) {
-      let ticket = get(/databases/$(database)/documents/tickets/$(ticketId));
-      let property = get(/databases/$(database)/documents/properties/$(ticket.data.propertyId));
-      return property.data.landlordId == request.auth.uid;
+
+    function getRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType;
     }
 
-    // ===== COLLECTION RULES =====
-    
-    // Users collection
+    function isLandlord() { 
+      return isSignedIn() && 
+        (getRole() == 'landlord' || 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'landlord'); 
+    }
+    function isTenant() { 
+      return isSignedIn() && 
+        (getRole() == 'tenant' || 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'tenant'); 
+    }
+    function isContractor() { 
+      return isSignedIn() && 
+        (getRole() == 'contractor' || 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'contractor'); 
+    }
+    function isAdmin() { return isSignedIn() && getRole() == 'admin'; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+
+    function isPropertyOwner(propertyId) {
+      let prop = get(/databases/$(database)/documents/properties/$(propertyId));
+      return prop.data.landlordId == request.auth.uid;
+    }
+
+    function isPropertyTenant(propertyId) {
+      let prop = get(/databases/$(database)/documents/properties/$(propertyId));
+      return prop.data.tenants.hasAny([request.auth.uid]);
+    }
+
+    function isValidString(field, max) {
+      return field is string && field.size() <= max;
+    }
+
+    function isValidStringArray(arr, maxEntries, maxLength) {
+      return arr is list && arr.size() <= maxEntries && 
+             (arr.size() == 0 || isArrayOfStringsWithinLength(arr, maxLength));
+    }
+
+    function isArrayOfStringsWithinLength(arr, maxLength) {
+      // Limit to checking first 10 items (practical limit for validation)
+      return (arr.size() >= 1 ? (arr[0] is string && arr[0].size() <= maxLength) : true) &&
+             (arr.size() >= 2 ? (arr[1] is string && arr[1].size() <= maxLength) : true) &&
+             (arr.size() >= 3 ? (arr[2] is string && arr[2].size() <= maxLength) : true) &&
+             (arr.size() >= 4 ? (arr[3] is string && arr[3].size() <= maxLength) : true) &&
+             (arr.size() >= 5 ? (arr[4] is string && arr[4].size() <= maxLength) : true) &&
+             (arr.size() >= 6 ? (arr[5] is string && arr[5].size() <= maxLength) : true) &&
+             (arr.size() >= 7 ? (arr[6] is string && arr[6].size() <= maxLength) : true) &&
+             (arr.size() >= 8 ? (arr[7] is string && arr[7].size() <= maxLength) : true) &&
+             (arr.size() >= 9 ? (arr[8] is string && arr[8].size() <= maxLength) : true) &&
+             (arr.size() >= 10 ? (arr[9] is string && arr[9].size() <= maxLength) : true);
+    }
+
+    function isValidTicket(data) {
+      return isValidString(data.description, 1000) &&
+             isValidString(data.issueType, 50) &&
+             isValidString(data.urgencyLevel, 20) &&
+             isValidStringArray(data.photos, 10, 500);
+    }
+
+    function isLimitedUpdate(data, resourceData) {
+      let allowed = ['status', 'progressUpdates', 'updatedAt'];
+      return data.diff(resourceData).affectedKeys().hasOnly(allowed);
+    }
+
+    function isValidFeedback(data) {
+      return data.rating >= 1 && data.rating <= 5 && isValidString(data.comment, 500);
+    }
+
+    // MATCHES BEGIN HERE
     match /users/{userId} {
-      // Read: User can read their own profile
-      // Landlords can read profiles of their tenants and contractors they work with
-      allow read: if isOwner(userId) || 
-                   (hasRole('landlord') && isLandlordForUser(userId));
-      
-      // Create: Any authenticated user can create their own profile
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-      
-      // Update: User can update their own profile
-      // But can't change role after creation
-      allow update: if isOwner(userId) && 
-                     (request.resource.data.diff(resource.data).affectedKeys()
-                       .hasOnly(['name', 'phone', 'linkedTo', 'profileComplete']) || 
-                      request.resource.data.role == resource.data.role);
-      
-      // No direct deletion allowed
-      allow delete: if false;
-      
-      // Helper function to check if the landlord is associated with this user
-      function isLandlordForUser(userId) {
-        let user = get(/databases/$(database)/documents/users/$(userId));
-        return user.data.landlordId == request.auth.uid;
-      }
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) &&
+        (!('role' in request.resource.data) || request.resource.data.role == resource.data.role);
     }
-    
-    // Properties collection
-    match /properties/{propertyId} {
-      // Read: Landlord who owns the property or tenants of the property can read
-      allow read: if isAuthenticated() && 
-                   (isPropertyLandlord(propertyId) || isPropertyTenant(propertyId));
-      
-      // Create: Only landlords can create properties
-      allow create: if hasRole('landlord') && 
-                     request.resource.data.landlordId == request.auth.uid;
-      
-      // Update: Only landlord who owns the property can update
-      allow update: if isPropertyLandlord(propertyId);
-      
-      // No direct deletion allowed
-      allow delete: if false;
-    }
-    
-    // Maintenance Tickets collection
-    match /tickets/{ticketId} {
-      // Read: Submitter, assigned contractor, or landlord of the property can read
-      allow read: if isAuthenticated() && 
-                   (isTicketSubmitter(ticketId) || 
-                    isAssignedContractor(ticketId) || 
-                    isTicketPropertyLandlord(ticketId));
-      
-      // Create: Tenants can create tickets
-      allow create: if hasRole('tenant') && 
-                     request.resource.data.submittedBy == request.auth.uid &&
-                     isPropertyTenant(request.resource.data.propertyId);
-      
-      // Update:
-      // - Tenant who submitted can update description/photos/cancel (but not status)
-      // - Assigned contractor can update status to in_progress or completed
-      // - Landlord of the property can update all fields
-      allow update: if isAuthenticated() && (
-                     // Tenant updates (limited fields)
-                     (isTicketSubmitter(ticketId) && 
-                      request.resource.data.diff(resource.data).affectedKeys()
-                       .hasOnly(['description', 'photoUrl', 'timestamps']) &&
-                      request.resource.data.status == resource.data.status) ||
-                     // Contractor updates (status only)
-                     (isAssignedContractor(ticketId) &&
-                      request.resource.data.diff(resource.data).affectedKeys()
-                       .hasOnly(['status', 'timestamps']) &&
-                      (request.resource.data.status == 'in_progress' || 
-                       request.resource.data.status == 'completed')) ||
-                     // Landlord updates (all fields)
-                     isTicketPropertyLandlord(ticketId)
-                    );
-      
-      // No direct deletion allowed
-      allow delete: if false;
-    }
-    
-    // Landlord Profiles collection
+
     match /landlordProfiles/{landlordId} {
-      // Read: Owner or associated tenants/contractors can read
-      allow read: if isAuthenticated() && 
-                   (isOwner(landlordId) || 
-                    isLinkedToLandlord(landlordId));
-      
-      // Create: Only the landlord themselves can create their profile
-      allow create: if isOwner(landlordId) && hasRole('landlord');
-      
-      // Update: Only the landlord themselves can update their profile
-      allow update: if isOwner(landlordId);
-      
-      // No direct deletion allowed
-      allow delete: if false;
-      
-      // Helper function to check if user is linked to this landlord
-      function isLinkedToLandlord(landlordId) {
-        let user = get(/databases/$(database)/documents/users/$(request.auth.uid));
-        return user.data.landlordId == landlordId;
+      allow read: if isOwner(landlordId) || isAdmin();
+      allow create, update: if isOwner(landlordId) && isLandlord();
+
+      match /contractors/{contractorId} {
+        allow read: if isOwner(landlordId) || isOwner(contractorId) || isAdmin();
+        allow write: if isOwner(landlordId);
       }
     }
-    
-    // Contractor Profiles collection
+
     match /contractorProfiles/{contractorId} {
-      // Read: Owner or landlords who have them in their rolodex can read
-      allow read: if isAuthenticated() && 
-                   (isOwner(contractorId) || 
-                    isContractorInLandlordRolodex(contractorId));
-      
-      // Create: Only the contractor themselves can create their profile
-      allow create: if isOwner(contractorId) && hasRole('contractor');
-      
-      // Update: Only the contractor themselves can update their profile
-      allow update: if isOwner(contractorId);
-      
-      // No direct deletion allowed
-      allow delete: if false;
-      
-      // Helper function to check if contractor is in landlord's rolodex
-      function isContractorInLandlordRolodex(contractorId) {
-        let landlordProfile = get(/databases/$(database)/documents/landlordProfiles/$(request.auth.uid));
-        return contractorId in landlordProfile.data.contractors;
+      allow read: if isSignedIn();
+      allow create: if isOwner(contractorId) && isContractor();
+      allow update: if isOwner(contractorId) &&
+        !('averageRating' in request.resource.data) &&
+        !('totalRatings' in request.resource.data) &&
+        !('totalRatingSum' in request.resource.data) ||
+        isAdmin();
+    }
+
+    match /tenantProfiles/{tenantId} {
+      allow read: if isOwner(tenantId) || isAdmin();
+      allow create: if isOwner(tenantId) && isTenant() && request.resource.data.userId == request.auth.uid;
+      allow update: if isOwner(tenantId);
+    }
+
+    match /properties/{propertyId} {
+      allow read: if isPropertyOwner(propertyId) || isPropertyTenant(propertyId) || isAdmin();
+      allow create: if isLandlord();
+      allow update, delete: if isPropertyOwner(propertyId);
+
+      match /tenants/{tenantId} {
+        allow read: if isPropertyOwner(propertyId) || isOwner(tenantId) || isAdmin();
+        allow write: if isPropertyOwner(propertyId);
       }
+    }
+
+    match /tickets/{ticketId} {
+      allow read: if
+        resource.data.tenantId == request.auth.uid ||
+        isPropertyOwner(resource.data.propertyId) ||
+        resource.data.contractorId == request.auth.uid ||
+        isAdmin();
+
+      allow create: if isTenant() &&
+        request.resource.data.tenantId == request.auth.uid &&
+        isPropertyTenant(request.resource.data.propertyId) &&
+        isValidTicket(request.resource.data);
+
+      allow update: if
+        isPropertyOwner(resource.data.propertyId) ||
+        (resource.data.contractorId == request.auth.uid && isContractor() &&
+         isLimitedUpdate(request.resource.data, resource.data)) ||
+        isAdmin();
+
+      match /feedback/{userId} {
+        allow read: if
+          get(/databases/$(database)/documents/tickets/$(ticketId)).data.tenantId == request.auth.uid ||
+          isPropertyOwner(get(/databases/$(database)/documents/tickets/$(ticketId)).data.propertyId) ||
+          get(/databases/$(database)/documents/tickets/$(ticketId)).data.contractorId == request.auth.uid ||
+          isAdmin();
+
+        allow create: if
+          get(/databases/$(database)/documents/tickets/$(ticketId)).data.tenantId == request.auth.uid &&
+          request.resource.data.tenantId == request.auth.uid &&
+          isValidFeedback(request.resource.data);
+
+        allow update, delete: if false;
+      }
+    }
+
+    match /notifications/{notificationId} {
+      allow read, update, delete: if isSignedIn() &&
+        resource.data.userId == request.auth.uid;
+      allow create: if isAdmin();
+    }
+
+    // Default fallback
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
-} 
+}

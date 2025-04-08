@@ -100,7 +100,7 @@ const LandingPage = () => {
             Ready to transform your property management?
           </h2>
           <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
-            <Link to="/signup" className="bg-white text-propagentic-teal px-8 py-4 rounded-lg font-medium hover:bg-propagentic-neutral-light transform hover:-translate-y-0.5 transition duration-150 text-center">
+            <Link to="/auth?tab=signup" className="bg-white text-propagentic-teal px-8 py-4 rounded-lg font-medium hover:bg-propagentic-neutral-light transform hover:-translate-y-0.5 transition duration-150 text-center">
               Get Started Free
             </Link>
             <Link to="/demo" className="border-2 border-white text-white px-8 py-4 rounded-lg font-medium hover:bg-white hover:bg-opacity-20 transform hover:-translate-y-0.5 transition duration-150 text-center">

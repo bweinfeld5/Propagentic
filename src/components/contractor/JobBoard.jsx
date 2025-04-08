@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { 
-  ClipboardListIcon, 
+  ClipboardDocumentListIcon as ClipboardListIcon, 
   ClockIcon, 
   CheckCircleIcon, 
-  ExclamationIcon, 
+  ExclamationCircleIcon as ExclamationIcon, 
   ChevronRightIcon,
-  FilterIcon,
-  SortAscendingIcon
-} from '@heroicons/react/outline';
+  FunnelIcon as FilterIcon,
+  ArrowsUpDownIcon as SortAscendingIcon
+} from '@heroicons/react/24/outline';
 
 // Helper function to determine status styles
 const getStatusStyles = (status) => {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { ClipboardListIcon, ClockIcon, ExclamationIcon, CheckCircleIcon, ChevronRightIcon } from '@heroicons/react/outline';
+import { ClipboardDocumentListIcon, ClockIcon, ExclamationTriangleIcon, CheckCircleIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 // Helper function to determine status styles
 const getStatusStyles = (status) => {
@@ -11,7 +11,7 @@ const getStatusStyles = (status) => {
     case 'new':
     case 'pending_classification':
     case 'ready_to_dispatch':
-      return { badge: 'bg-blue-100 text-blue-800', icon: ClipboardListIcon, text: 'New' };
+      return { badge: 'bg-blue-100 text-blue-800', icon: ClipboardDocumentListIcon, text: 'New' };
     case 'assigned':
       return { badge: 'bg-yellow-100 text-yellow-800', icon: ClockIcon, text: 'Assigned' };
     case 'in_progress':
@@ -19,7 +19,7 @@ const getStatusStyles = (status) => {
     case 'completed':
       return { badge: 'bg-green-100 text-green-800', icon: CheckCircleIcon, text: 'Completed' };
     default:
-      return { badge: 'bg-gray-100 text-gray-800', icon: ClipboardListIcon, text: status || 'New' };
+      return { badge: 'bg-gray-100 text-gray-800', icon: ClipboardDocumentListIcon, text: status || 'New' };
   }
 };
 
@@ -30,11 +30,11 @@ const getPriorityStyles = (priority) => {
   
   switch (priorityStr) {
     case 'high':
-      return { tag: 'border-red-500 text-red-600 bg-red-50', icon: ExclamationIcon, text: 'High' };
+      return { tag: 'border-red-500 text-red-600 bg-red-50', icon: ExclamationTriangleIcon, text: 'High' };
     case 'medium':
-      return { tag: 'border-yellow-500 text-yellow-600 bg-yellow-50', icon: ExclamationIcon, text: 'Medium' };
+      return { tag: 'border-yellow-500 text-yellow-600 bg-yellow-50', icon: ExclamationTriangleIcon, text: 'Medium' };
     case 'low':
-      return { tag: 'border-green-500 text-green-600 bg-green-50', icon: ExclamationIcon, text: 'Low' };
+      return { tag: 'border-green-500 text-green-600 bg-green-50', icon: ExclamationTriangleIcon, text: 'Low' };
     default:
       return { tag: 'border-gray-400 text-gray-500', icon: null, text: 'Normal' };
   }
@@ -132,7 +132,7 @@ const RequestFeed = ({ requests = [], onAssignContractor }) => {
   if (sortedRequests.length === 0) {
     return (
       <div className="text-center py-8">
-        <ClipboardListIcon className="mx-auto h-10 w-10 text-gray-400" />
+        <ClipboardDocumentListIcon className="mx-auto h-10 w-10 text-gray-400" />
         <h3 className="mt-2 text-sm font-medium text-gray-900">No Maintenance Requests</h3>
         <p className="mt-1 text-sm text-gray-500">All maintenance requests have been completed.</p>
       </div>

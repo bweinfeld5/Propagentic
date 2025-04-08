@@ -3,17 +3,17 @@ import { doc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../firebase/config';
 import { 
-  ClipboardListIcon, 
-  LocationMarkerIcon, 
+  ClipboardDocumentListIcon as ClipboardListIcon,
+  MapPinIcon as LocationMarkerIcon, 
   UserIcon, 
   PhoneIcon, 
-  MailIcon, 
-  PhotographIcon,
-  ChatAlt2Icon,
+  EnvelopeIcon as MailIcon, 
+  PhotoIcon as PhotographIcon,
+  ChatBubbleLeftRightIcon as ChatAlt2Icon,
   CheckCircleIcon,
-  ExclamationIcon,
+  ExclamationCircleIcon as ExclamationIcon,
   ClockIcon
-} from '@heroicons/react/outline';
+} from '@heroicons/react/24/outline';
 
 // Job status options
 const STATUS_OPTIONS = [

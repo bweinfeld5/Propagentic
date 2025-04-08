@@ -5,12 +5,13 @@ import HomeNavLink from '../components/layout/HomeNavLink';
 
 const RegisterPage = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full">
-        <div className="text-center mb-6">
-          <div className="flex justify-center">
-            <HomeNavLink className="mb-4" />
-          </div>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="absolute top-4 left-4 sm:top-8 sm:left-8">
+        <HomeNavLink className="text-base flex items-center" />
+      </div>
+      
+      <div className="max-w-md w-full bg-white rounded-lg shadow-md">
+        <div className="text-center p-8 pb-0">
           <h2 className="text-3xl font-extrabold text-gray-900">
             Create your account
           </h2>

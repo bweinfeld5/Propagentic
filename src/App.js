@@ -1,100 +1,195 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { NotificationProvider } from './components/shared/NotificationProvider';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from './firebase/config';
 
 // Pages & Components
 import LandingPage from './components/landing/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import DashboardPage from './pages/DashboardPage'; // Generic dashboard (may need removal/replacement)
-import TenantDashboard from './pages/TenantDashboard.jsx';
-import LandlordDashboard from './pages/LandlordDashboard';
-import ContractorDashboard from './pages/ContractorDashboard';
+import DashboardPage from './pages/DashboardPage';
+
+// New Components
+import TenantDashboard from './components/tenant/TenantDashboard';
+import LandlordTicketDashboard from './components/landlord/LandlordTicketDashboard';
+import ContractorDashboard from './components/contractor/ContractorDashboard';
+import CreateLandlordProfile from './components/landlord/CreateLandlordProfile';
+
+// Existing Pages
 import MaintenanceFormPage from './pages/MaintenanceFormPage';
 import MyMaintenanceRequestsPage from './pages/MyMaintenanceRequestsPage';
 import PricingPage from './pages/PricingPage';
-import OnboardingSurvey from './components/onboarding/OnboardingSurvey'; // Tenant onboarding
-import LandlordOnboarding from './components/onboarding/LandlordOnboarding'; // Landlord onboarding
-import ContractorOnboardingPage from './pages/ContractorOnboardingPage'; // Contractor onboarding
-import JobDetailPage from './pages/JobDetailPage'; // Job details
-import JobHistoryPage from './pages/JobHistoryPage'; // Job history
-import ContractorProfilePage from './pages/ContractorProfilePage'; // Contractor profile
+import OnboardingSurvey from './components/onboarding/OnboardingSurvey';
+import LandlordOnboarding from './components/onboarding/LandlordOnboarding';
+import ContractorOnboardingPage from './pages/ContractorOnboardingPage';
+import JobDetailPage from './pages/JobDetailPage';
+import JobHistoryPage from './pages/JobHistoryPage';
+import ContractorProfilePage from './pages/ContractorProfilePage';
 import ProfilePage from './pages/ProfilePage';
-import DashboardLayout from './components/layouts/DashboardLayout'; // Import the layout
+import NotificationsPage from './pages/NotificationsPage';
+import DashboardLayout from './components/layouts/DashboardLayout';
+import AuthPage from './pages/AuthPage';
+import EnhancedLandingPage from './components/landing/EnhancedLandingPage';
 
-// Route Guards (Consider simplifying if DashboardLayout handles auth checks)
+// Auth hook
+import { useAuth } from './context/AuthContext'; 
+
+// Route Guards
 const PrivateRoute = ({ children }) => {
-  // This might be redundant if DashboardLayout handles auth redirect
-  const { currentUser, loading } = useAuth(); // Assuming useAuth provides loading state
+  const { currentUser, loading } = useAuth();
   
   if (loading) {
-     return <div>Loading...</div>; // Or a spinner component
+     return <div className="flex h-screen items-center justify-center">
+       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+     </div>;
   }
   
   return currentUser ? children : <Navigate to="/login" />;
 };
 
-// Re-checking useAuth hook for loading state
-import { useAuth } from './context/AuthContext'; 
+// Role-specific redirect component
+const RoleBasedRedirect = () => {
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const redirectBasedOnRole = async () => {
+      if (!currentUser) {
+        navigate('/login');
+        return;
+      }
+      
+      try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userSnap = await getDoc(userRef);
+        
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          // Check both userType and role fields for backward compatibility
+          const userRole = userData.userType || userData.role;
+          console.log(`RoleBasedRedirect - User role detected: ${userRole}`);
+          
+          switch (userRole) {
+            case 'tenant':
+              navigate('/tenant/dashboard');
+              break;
+            case 'landlord':
+              navigate('/landlord/dashboard');
+              break;
+            case 'contractor':
+              navigate('/contractor/dashboard');
+              break;
+            default:
+              console.log('RoleBasedRedirect - No recognized role, redirecting to profile');
+              navigate('/profile');
+              break;
+          }
+        } else {
+          // No user document found, redirect to profile
+          navigate('/profile');
+        }
+      } catch (err) {
+        console.error('Error checking user role:', err);
+        navigate('/profile');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    redirectBasedOnRole();
+  }, [currentUser, navigate]);
+
+  // Show loading while checking role
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+  
+  return null;
+};
 
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/signup" element={<RegisterPage />} />
-          <Route path="/pricing" element={<PricingPage />} />
-          
-          {/* Onboarding Routes - These should not be in DashboardLayout */}
-          <Route path="/onboarding" element={
-            <PrivateRoute>
-              <OnboardingSurvey />
-            </PrivateRoute>
-          } />
-          
-          <Route path="/landlord-onboarding" element={
-            <PrivateRoute>
-              <LandlordOnboarding />
-            </PrivateRoute>
-          } />
-          
-          <Route path="/contractor-onboarding" element={
-            <PrivateRoute>
-              <ContractorOnboardingPage />
-            </PrivateRoute>
-          } />
-          
-          {/* Protected Routes - Wrapped by DashboardLayout */}
-          <Route element={<DashboardLayout />}>             
-              {/* Profile Pages */}
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/contractor/profile" element={<ContractorProfilePage />} />
-              
-              {/* User Type Specific Dashboards */}
-              <Route path="/dashboard" element={<DashboardPage />} /> {/* Consider role-based redirect here or remove */}
-              <Route path="/tenant" element={<TenantDashboard />} />
-              <Route path="/landlord" element={<LandlordDashboard />} />
-              <Route path="/contractor" element={<ContractorDashboard />} />
-              
-              {/* Contractor routes */}
-              <Route path="/contractor/jobs/:jobId" element={<JobDetailPage />} />
-              <Route path="/contractor/history" element={<JobHistoryPage />} />
-              
-              {/* Maintenance Routes */}
-              <Route path="/maintenance/new" element={<MaintenanceFormPage />} />
-              <Route path="/maintenance/my-requests" element={<MyMaintenanceRequestsPage />} />
-              
-              {/* Add other protected routes like /properties, /settings etc. here */}
-          </Route>
-          
-          {/* Fallback/Not Found - Redirect to login */}
-          <Route path="*" element={<Navigate to="/login" />} />
-        </Routes>
-      </Router>
+      <NotificationProvider>
+        <Router>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/new" element={<EnhancedLandingPage />} />
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/signup" element={<RegisterPage />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            
+            {/* Onboarding Routes */}
+            <Route path="/onboarding" element={
+              <PrivateRoute>
+                <OnboardingSurvey />
+              </PrivateRoute>
+            } />
+            
+            <Route path="/landlord-onboarding" element={
+              <PrivateRoute>
+                <LandlordOnboarding />
+              </PrivateRoute>
+            } />
+            
+            <Route path="/create-landlord-profile" element={
+              <PrivateRoute>
+                <CreateLandlordProfile />
+              </PrivateRoute>
+            } />
+            
+            <Route path="/contractor-onboarding" element={
+              <PrivateRoute>
+                <ContractorOnboardingPage />
+              </PrivateRoute>
+            } />
+            
+            {/* Protected Routes - Wrapped by DashboardLayout */}
+            <Route element={<DashboardLayout />}>             
+                {/* Profile Pages */}
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/contractor/profile" element={<ContractorProfilePage />} />
+                
+                {/* Notifications */}
+                <Route path="/notifications" element={<NotificationsPage />} />
+                
+                {/* Role-based redirect */}
+                <Route path="/dashboard" element={<RoleBasedRedirect />} />
+                
+                {/* Tenant Routes */}
+                <Route path="/tenant/dashboard" element={<TenantDashboard />} />
+                
+                {/* Landlord Routes */}
+                <Route path="/landlord/dashboard" element={<LandlordTicketDashboard />} />
+                
+                {/* Contractor Routes */}
+                <Route path="/contractor/dashboard" element={<ContractorDashboard />} />
+                <Route path="/contractor/jobs/:jobId" element={<JobDetailPage />} />
+                <Route path="/contractor/history" element={<JobHistoryPage />} />
+                
+                {/* Maintenance Routes */}
+                <Route path="/maintenance/new" element={<MaintenanceFormPage />} />
+                <Route path="/maintenance/my-requests" element={<MyMaintenanceRequestsPage />} />
+            </Route>
+            
+            {/* Auth Page */}
+            <Route path="/auth" element={<AuthPage />} />
+            
+            {/* Fallback/Not Found - Redirect to login */}
+            <Route path="*" element={<Navigate to="/login" />} />
+          </Routes>
+        </Router>
+      </NotificationProvider>
     </AuthProvider>
   );
 }
