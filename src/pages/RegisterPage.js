@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import SignupForm from '../components/auth/SignupForm';
 import HomeNavLink from '../components/layout/HomeNavLink';
 
-const RegisterPage = () => {
+const RegisterPage = ({ initialRole, isPremium }) => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="absolute top-4 left-4 sm:top-8 sm:left-8">
@@ -23,7 +23,7 @@ const RegisterPage = () => {
           </p>
         </div>
         
-        <SignupForm />
+        <SignupForm initialRole={initialRole} isPremium={isPremium} />
       </div>
     </div>
   );

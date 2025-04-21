@@ -11,8 +11,11 @@ import {
   deleteDoc
 } from 'firebase/firestore';
 import { db } from '../../firebase/config';
-import { Invite, UserRole } from '../../models/schema';
+import { Invite } from '../../models/schema';
 import { inviteConverter, createNewInvite } from '../../models/converters';
+
+// Define role type inline
+type InviteRole = 'tenant' | 'contractor';
 
 // Collection references
 const invitesCollection = collection(db, 'invites').withConverter(inviteConverter);

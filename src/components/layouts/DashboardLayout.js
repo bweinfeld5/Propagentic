@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { NotificationProvider as NotificationCenterProvider } from '../../context/NotificationContext';
 import HeaderNav from '../layout/HeaderNav.jsx';
 import SidebarNav from '../layout/SidebarNav.jsx';
+import AnimatedPageLayout from './AnimatedPageLayout';
 
 const DashboardLayout = () => {
   const { currentUser, userProfile, isLandlord, loading: authLoading } = useAuth();
@@ -84,16 +86,20 @@ const DashboardLayout = () => {
       {/* Use SidebarNav component which has the green styling */}
       <SidebarNav />
       
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden md:ml-64">
-        {/* Use HeaderNav component */}
-        <HeaderNav />
-        
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100">
-          <Outlet />
-        </main>
-      </div>
+      {/* Main Content - Wrap the entire right side with NotificationCenterProvider */}
+      <NotificationCenterProvider>
+        <div className="flex-1 flex flex-col overflow-hidden md:ml-64">
+          {/* Use HeaderNav component */}
+          <HeaderNav />
+          
+          {/* Main Content Area with Animated Page Transitions */}
+          <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100">
+            <AnimatedPageLayout transitionType="dashboardTransition" duration={0.3}>
+              <Outlet />
+            </AnimatedPageLayout>
+          </main>
+        </div>
+      </NotificationCenterProvider>
     </div>
   );
 };

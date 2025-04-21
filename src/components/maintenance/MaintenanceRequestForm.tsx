@@ -186,28 +186,28 @@ const MaintenanceRequestForm: React.FC = () => {
   };
 
   return (
-    <div className="bg-white shadow-md rounded-lg p-6">
-        <h2 className="text-xl font-semibold mb-4">Submit New Maintenance Request</h2>
+    <div className="bg-white dark:bg-slate-800 shadow-lg rounded-xl p-8 border border-gray-200 dark:border-gray-700">
+        <h2 className="text-xl font-semibold mb-6">Submit New Maintenance Request</h2>
         
-        {error && <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-3 mb-4 text-sm" role="alert">{error}</div>}
-        {success && <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-3 mb-4 text-sm" role="alert">{success}</div>}
+        {error && <div className="bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 text-red-700 dark:text-red-300 p-4 mb-6 text-sm rounded-r" role="alert">{error}</div>}
+        {success && <div className="bg-green-100 dark:bg-green-900/30 border-l-4 border-green-500 text-green-700 dark:text-green-300 p-4 mb-6 text-sm rounded-r" role="alert">{success}</div>}
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-                <label htmlFor="issueTitle" className="block text-sm font-medium text-gray-700">Issue Title *</label>
-                <input type="text" name="issueTitle" id="issueTitle" required value={formData.issueTitle} onChange={handleChange} className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm" />
+                <label htmlFor="issueTitle" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Issue Title *</label>
+                <input type="text" name="issueTitle" id="issueTitle" required value={formData.issueTitle} onChange={handleChange} className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white dark:bg-slate-800 focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm" />
             </div>
             <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description *</label>
-                <textarea name="description" id="description" required rows={4} value={formData.description} onChange={handleChange} className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm"></textarea>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description *</label>
+                <textarea name="description" id="description" required rows={4} value={formData.description} onChange={handleChange} className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white dark:bg-slate-800 focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm"></textarea>
             </div>
             <div>
-                <label htmlFor="unitNumber" className="block text-sm font-medium text-gray-700">Unit Number *</label>
-                <input type="text" name="unitNumber" id="unitNumber" required value={formData.unitNumber} onChange={handleChange} className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm" />
+                <label htmlFor="unitNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Number *</label>
+                <input type="text" name="unitNumber" id="unitNumber" required value={formData.unitNumber} onChange={handleChange} className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white dark:bg-slate-800 focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm" />
             </div>
             <div>
-                <label htmlFor="urgency" className="block text-sm font-medium text-gray-700">Urgency</label>
-                <select name="urgency" id="urgency" value={formData.urgency} onChange={handleChange} className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm bg-white">
+                <label htmlFor="urgency" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Urgency</label>
+                <select name="urgency" id="urgency" value={formData.urgency} onChange={handleChange} className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white dark:bg-slate-800 focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm">
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
                     <option value="high">High</option>
@@ -216,25 +216,25 @@ const MaintenanceRequestForm: React.FC = () => {
         
             {/* Photo Upload */}
             <div>
-                <label className="block text-sm font-medium text-gray-700">Photo (Optional, Max 5MB)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Photo (Optional, Max 5MB)</label>
                 {!photoPreview ? (
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg bg-white dark:bg-slate-800">
                     <div className="space-y-1 text-center">
                         {/* SVG Icon */}
                         <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                        <div className="flex text-sm text-gray-600">
-                            <label htmlFor="photo-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-teal-600 hover:text-teal-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-teal-500">
+                        <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                            <label htmlFor="photo-upload" className="relative cursor-pointer bg-white dark:bg-slate-800 rounded-md font-medium text-teal-600 dark:text-teal-500 hover:text-teal-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-teal-500">
                                 <span>Upload a file</span>
                                 <input id="photo-upload" name="photo" type="file" className="sr-only" accept="image/*" onChange={handlePhotoChange} />
                             </label>
                             <p className="pl-1">or drag and drop</p>
                         </div>
-                        <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, GIF up to 5MB</p>
                     </div>
                 </div>
                 ) : (
                     <div className="mt-2 relative">
-                        <img src={photoPreview} alt="Preview" className="max-h-60 w-auto rounded-md border border-gray-300" />
+                        <img src={photoPreview} alt="Preview" className="max-h-60 w-auto rounded-lg border border-gray-300 dark:border-gray-600" />
                         <button type="button" onClick={removePhoto} className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 text-xs leading-none hover:bg-red-700 focus:outline-none">
                             &times;
                         </button>
@@ -243,14 +243,14 @@ const MaintenanceRequestForm: React.FC = () => {
             </div>
         
             <div className="form-group">
-                <label htmlFor="issueType">Issue Type</label>
+                <label htmlFor="issueType" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Issue Type</label>
                 <select
                     id="issueType"
                     name="issueType"
                     value={formData.issueType}
                     onChange={handleChange}
                     required
-                    className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm bg-white"
+                    className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white dark:bg-slate-800 focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm"
                 >
                     <option value="">Select an issue type</option>
                     {CATEGORIES.map(category => (
@@ -260,7 +260,7 @@ const MaintenanceRequestForm: React.FC = () => {
             </div>
         
             <div>
-                <button type="submit" disabled={loading} className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50">
+                <button type="submit" disabled={loading} className="w-full py-2 px-4 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-propagentic-teal hover:bg-teal-700 focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50">
                     {loading ? 'Submitting...' : 'Submit Request'}
                 </button>
             </div>

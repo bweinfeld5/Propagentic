@@ -1,19 +1,219 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { CheckIcon } from '@heroicons/react/solid';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { CheckIcon, XMarkIcon } from '@heroicons/react/24/solid';
 
 const PricingPage = () => {
+  const location = useLocation();
   const [billingCycle, setBillingCycle] = useState('monthly');
   const [audienceTab, setAudienceTab] = useState('landlords');
+  const [calculatorValues, setCalculatorValues] = useState({
+    units: 25,
+    requests: 10,
+  });
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [showDemoForm, setShowDemoForm] = useState(false);
+  
+  // Check for state parameters from redirects
+  useEffect(() => {
+    if (location.state?.openContactForm) {
+      setShowContactForm(true);
+    }
+    if (location.state?.openDemoForm) {
+      setShowDemoForm(true);
+    }
+  }, [location.state]);
   
   // Calculate annual discount (save 20%)
   const getAnnualPrice = (monthlyPrice) => {
     return (monthlyPrice * 12 * 0.8).toFixed(0);
   };
 
+  // Calculate estimated savings
+  const calculateSavings = () => {
+    const { units, requests } = calculatorValues;
+    const timePerRequest = 1.5; // hours
+    const hourlyRate = 35; // dollars
+    
+    const monthlyRequests = requests * units / 12;
+    const timeSaved = monthlyRequests * timePerRequest;
+    const moneySaved = timeSaved * hourlyRate;
+    
+    return {
+      timeSaved: timeSaved.toFixed(1),
+      moneySaved: moneySaved.toFixed(0)
+    };
+  };
+
+  const savings = calculateSavings();
+
+  // Contact Form Component
+  const ContactForm = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-propagentic-slate rounded-xl shadow-xl max-w-md w-full p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-propagentic-slate-dark dark:text-white">Contact Sales</h3>
+          <button 
+            onClick={() => setShowContactForm(false)}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            <XMarkIcon className="h-6 w-6" />
+          </button>
+        </div>
+        
+        <form className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-propagentic-slate dark:text-propagentic-neutral-light mb-1">
+              Name
+            </label>
+            <input 
+              type="text" 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-propagentic-teal focus:border-propagentic-teal dark:bg-propagentic-slate-dark dark:border-gray-600"
+              placeholder="Your name"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-propagentic-slate dark:text-propagentic-neutral-light mb-1">
+              Email
+            </label>
+            <input 
+              type="email" 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-propagentic-teal focus:border-propagentic-teal dark:bg-propagentic-slate-dark dark:border-gray-600"
+              placeholder="your@email.com"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-propagentic-slate dark:text-propagentic-neutral-light mb-1">
+              Company
+            </label>
+            <input 
+              type="text" 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-propagentic-teal focus:border-propagentic-teal dark:bg-propagentic-slate-dark dark:border-gray-600"
+              placeholder="Your company name"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-propagentic-slate dark:text-propagentic-neutral-light mb-1">
+              Number of properties
+            </label>
+            <input 
+              type="number" 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-propagentic-teal focus:border-propagentic-teal dark:bg-propagentic-slate-dark dark:border-gray-600"
+              placeholder="100+"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-propagentic-slate dark:text-propagentic-neutral-light mb-1">
+              Message
+            </label>
+            <textarea 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-propagentic-teal focus:border-propagentic-teal dark:bg-propagentic-slate-dark dark:border-gray-600"
+              rows="3"
+              placeholder="Tell us about your needs"
+            ></textarea>
+          </div>
+          
+          <button 
+            type="submit"
+            className="w-full py-3 px-4 rounded-lg bg-propagentic-teal text-white hover:bg-propagentic-teal-dark text-center font-medium transition-colors"
+          >
+            Submit Request
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+  
+  // Demo Form Component
+  const DemoForm = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-propagentic-slate rounded-xl shadow-xl max-w-md w-full p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-propagentic-slate-dark dark:text-white">Schedule a Demo</h3>
+          <button 
+            onClick={() => setShowDemoForm(false)}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            <XMarkIcon className="h-6 w-6" />
+          </button>
+        </div>
+        
+        <form className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-propagentic-slate dark:text-propagentic-neutral-light mb-1">
+              Name
+            </label>
+            <input 
+              type="text" 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-propagentic-teal focus:border-propagentic-teal dark:bg-propagentic-slate-dark dark:border-gray-600"
+              placeholder="Your name"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-propagentic-slate dark:text-propagentic-neutral-light mb-1">
+              Email
+            </label>
+            <input 
+              type="email" 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-propagentic-teal focus:border-propagentic-teal dark:bg-propagentic-slate-dark dark:border-gray-600"
+              placeholder="your@email.com"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-propagentic-slate dark:text-propagentic-neutral-light mb-1">
+              Phone
+            </label>
+            <input 
+              type="tel" 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-propagentic-teal focus:border-propagentic-teal dark:bg-propagentic-slate-dark dark:border-gray-600"
+              placeholder="(123) 456-7890"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-propagentic-slate dark:text-propagentic-neutral-light mb-1">
+              Preferred date
+            </label>
+            <input 
+              type="date" 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-propagentic-teal focus:border-propagentic-teal dark:bg-propagentic-slate-dark dark:border-gray-600"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-propagentic-slate dark:text-propagentic-neutral-light mb-1">
+              Preferred time
+            </label>
+            <select className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-propagentic-teal focus:border-propagentic-teal dark:bg-propagentic-slate-dark dark:border-gray-600">
+              <option>Morning (9AM - 12PM)</option>
+              <option>Afternoon (12PM - 5PM)</option>
+              <option>Evening (5PM - 8PM)</option>
+            </select>
+          </div>
+          
+          <button 
+            type="submit"
+            className="w-full py-3 px-4 rounded-lg bg-propagentic-teal text-white hover:bg-propagentic-teal-dark text-center font-medium transition-colors"
+          >
+            Schedule Demo
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+
   return (
     <div className="bg-white dark:bg-propagentic-neutral-dark min-h-screen">
-      {/* Header section */}
+      {/* Show modal forms if triggered */}
+      {showContactForm && <ContactForm />}
+      {showDemoForm && <DemoForm />}
+      
+      {/* Header Section */}
       <div className="py-16 md:py-24 bg-propagentic-neutral-light dark:bg-propagentic-slate-dark">
         <div className="container mx-auto px-6">
           <div className="text-center">
@@ -284,6 +484,250 @@ const PricingPage = () => {
             </div>
           </div>
         )}
+
+        {/* Interactive Calculator Section */}
+        <div className="max-w-4xl mx-auto mt-24 mb-16">
+          <h2 className="text-3xl font-bold text-center text-propagentic-slate-dark dark:text-white mb-6">
+            Calculate Your Potential Savings
+          </h2>
+          <p className="text-center text-propagentic-slate dark:text-propagentic-neutral-light mb-12 max-w-3xl mx-auto">
+            See how much time and money you could save by automating your maintenance operations with PropAgentic.
+          </p>
+
+          <div className="bg-white dark:bg-propagentic-slate rounded-xl shadow-lg p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 className="font-bold text-propagentic-slate-dark dark:text-white mb-6">Your Information</h3>
+                
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-propagentic-slate dark:text-propagentic-neutral-light mb-2">
+                    Number of Units Managed
+                  </label>
+                  <div className="flex items-center">
+                    <input
+                      type="range"
+                      min="1"
+                      max="100"
+                      value={calculatorValues.units}
+                      onChange={(e) => setCalculatorValues({...calculatorValues, units: parseInt(e.target.value)})}
+                      className="w-full h-2 bg-propagentic-neutral-light rounded-lg appearance-none cursor-pointer dark:bg-propagentic-slate-dark"
+                    />
+                    <span className="ml-4 min-w-[50px] text-lg font-semibold text-propagentic-slate-dark dark:text-white">
+                      {calculatorValues.units}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-propagentic-slate dark:text-propagentic-neutral-light mb-2">
+                    Average Maintenance Requests Per Unit (Yearly)
+                  </label>
+                  <div className="flex items-center">
+                    <input
+                      type="range"
+                      min="1"
+                      max="20"
+                      value={calculatorValues.requests}
+                      onChange={(e) => setCalculatorValues({...calculatorValues, requests: parseInt(e.target.value)})}
+                      className="w-full h-2 bg-propagentic-neutral-light rounded-lg appearance-none cursor-pointer dark:bg-propagentic-slate-dark"
+                    />
+                    <span className="ml-4 min-w-[50px] text-lg font-semibold text-propagentic-slate-dark dark:text-white">
+                      {calculatorValues.requests}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-propagentic-neutral-light dark:bg-propagentic-slate-dark rounded-xl p-6 flex flex-col justify-center">
+                <h3 className="font-bold text-propagentic-slate-dark dark:text-white mb-6">Your Potential Savings</h3>
+                
+                <div className="mb-4">
+                  <p className="text-sm text-propagentic-slate dark:text-propagentic-neutral-light mb-2">
+                    Monthly Time Saved:
+                  </p>
+                  <p className="text-3xl font-bold text-propagentic-teal">
+                    {savings.timeSaved} hours
+                  </p>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-propagentic-slate dark:text-propagentic-neutral-light mb-2">
+                    Monthly Cost Savings:
+                  </p>
+                  <p className="text-3xl font-bold text-propagentic-teal">
+                    ${savings.moneySaved}
+                  </p>
+                </div>
+                
+                <div className="mt-6">
+                  <Link
+                    to="/signup"
+                    className="block w-full py-3 px-4 rounded-lg bg-propagentic-teal text-white hover:bg-propagentic-teal-dark text-center font-medium transition-colors"
+                  >
+                    Start Saving Today
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Feature Comparison Table */}
+        <div className="max-w-6xl mx-auto mt-24 mb-16 overflow-hidden">
+          <h2 className="text-3xl font-bold text-center text-propagentic-slate-dark dark:text-white mb-12">
+            Compare Features
+          </h2>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-propagentic-neutral-light dark:bg-propagentic-slate-dark">
+                  <th className="py-4 px-6 text-left text-sm font-medium text-propagentic-slate-dark dark:text-white">Feature</th>
+                  <th className="py-4 px-6 text-center text-sm font-medium text-propagentic-slate-dark dark:text-white">Starter</th>
+                  <th className="py-4 px-6 text-center text-sm font-medium text-propagentic-slate-dark dark:text-white bg-propagentic-teal bg-opacity-10">Pro</th>
+                  <th className="py-4 px-6 text-center text-sm font-medium text-propagentic-slate-dark dark:text-white">Business</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-propagentic-neutral-light dark:divide-propagentic-slate-dark">
+                <tr>
+                  <td className="py-4 px-6 text-sm text-propagentic-slate-dark dark:text-white font-medium">Units Managed</td>
+                  <td className="py-4 px-6 text-center text-sm text-propagentic-slate dark:text-propagentic-neutral-light">Up to 10</td>
+                  <td className="py-4 px-6 text-center text-sm text-propagentic-slate dark:text-propagentic-neutral-light bg-propagentic-teal bg-opacity-5">Up to 100</td>
+                  <td className="py-4 px-6 text-center text-sm text-propagentic-slate dark:text-propagentic-neutral-light">100+</td>
+                </tr>
+                <tr>
+                  <td className="py-4 px-6 text-sm text-propagentic-slate-dark dark:text-white font-medium">AI Request Processing</td>
+                  <td className="py-4 px-6 text-center">
+                    <CheckIcon className="h-5 w-5 text-propagentic-teal mx-auto" />
+                  </td>
+                  <td className="py-4 px-6 text-center bg-propagentic-teal bg-opacity-5">
+                    <CheckIcon className="h-5 w-5 text-propagentic-teal mx-auto" />
+                  </td>
+                  <td className="py-4 px-6 text-center">
+                    <CheckIcon className="h-5 w-5 text-propagentic-teal mx-auto" />
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-4 px-6 text-sm text-propagentic-slate-dark dark:text-white font-medium">Automated Dispatches</td>
+                  <td className="py-4 px-6 text-center text-sm text-propagentic-slate dark:text-propagentic-neutral-light">Up to 25/mo</td>
+                  <td className="py-4 px-6 text-center text-sm text-propagentic-slate dark:text-propagentic-neutral-light bg-propagentic-teal bg-opacity-5">Unlimited</td>
+                  <td className="py-4 px-6 text-center text-sm text-propagentic-slate dark:text-propagentic-neutral-light">Unlimited</td>
+                </tr>
+                <tr>
+                  <td className="py-4 px-6 text-sm text-propagentic-slate-dark dark:text-white font-medium">User Logins</td>
+                  <td className="py-4 px-6 text-center text-sm text-propagentic-slate dark:text-propagentic-neutral-light">1</td>
+                  <td className="py-4 px-6 text-center text-sm text-propagentic-slate dark:text-propagentic-neutral-light bg-propagentic-teal bg-opacity-5">Up to 5</td>
+                  <td className="py-4 px-6 text-center text-sm text-propagentic-slate dark:text-propagentic-neutral-light">Unlimited</td>
+                </tr>
+                <tr>
+                  <td className="py-4 px-6 text-sm text-propagentic-slate-dark dark:text-white font-medium">Advanced Analytics</td>
+                  <td className="py-4 px-6 text-center">
+                    <XMarkIcon className="h-5 w-5 text-gray-400 mx-auto" />
+                  </td>
+                  <td className="py-4 px-6 text-center bg-propagentic-teal bg-opacity-5">
+                    <CheckIcon className="h-5 w-5 text-propagentic-teal mx-auto" />
+                  </td>
+                  <td className="py-4 px-6 text-center">
+                    <CheckIcon className="h-5 w-5 text-propagentic-teal mx-auto" />
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-4 px-6 text-sm text-propagentic-slate-dark dark:text-white font-medium">API Access</td>
+                  <td className="py-4 px-6 text-center">
+                    <XMarkIcon className="h-5 w-5 text-gray-400 mx-auto" />
+                  </td>
+                  <td className="py-4 px-6 text-center bg-propagentic-teal bg-opacity-5">
+                    <XMarkIcon className="h-5 w-5 text-gray-400 mx-auto" />
+                  </td>
+                  <td className="py-4 px-6 text-center">
+                    <CheckIcon className="h-5 w-5 text-propagentic-teal mx-auto" />
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-4 px-6 text-sm text-propagentic-slate-dark dark:text-white font-medium">Dedicated Account Manager</td>
+                  <td className="py-4 px-6 text-center">
+                    <XMarkIcon className="h-5 w-5 text-gray-400 mx-auto" />
+                  </td>
+                  <td className="py-4 px-6 text-center bg-propagentic-teal bg-opacity-5">
+                    <XMarkIcon className="h-5 w-5 text-gray-400 mx-auto" />
+                  </td>
+                  <td className="py-4 px-6 text-center">
+                    <CheckIcon className="h-5 w-5 text-propagentic-teal mx-auto" />
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-4 px-6 text-sm text-propagentic-slate-dark dark:text-white font-medium">Support Level</td>
+                  <td className="py-4 px-6 text-center text-sm text-propagentic-slate dark:text-propagentic-neutral-light">Email</td>
+                  <td className="py-4 px-6 text-center text-sm text-propagentic-slate dark:text-propagentic-neutral-light bg-propagentic-teal bg-opacity-5">Priority (Email & Chat)</td>
+                  <td className="py-4 px-6 text-center text-sm text-propagentic-slate dark:text-propagentic-neutral-light">Premium</td>
+                </tr>
+                <tr>
+                  <td className="py-4 px-6 bg-white dark:bg-propagentic-slate"></td>
+                  <td className="py-4 px-6 text-center bg-white dark:bg-propagentic-slate">
+                    <Link to="/signup" className="inline-block py-2 px-4 rounded-lg bg-white text-propagentic-teal border border-propagentic-teal hover:bg-propagentic-neutral-light text-center font-medium transition-colors">
+                      Get Started
+                    </Link>
+                  </td>
+                  <td className="py-4 px-6 text-center bg-propagentic-teal bg-opacity-5">
+                    <Link to="/signup" className="inline-block py-2 px-4 rounded-lg bg-propagentic-teal text-white hover:bg-propagentic-teal-dark text-center font-medium transition-colors">
+                      Start Pro Trial
+                    </Link>
+                  </td>
+                  <td className="py-4 px-6 text-center bg-white dark:bg-propagentic-slate">
+                    <Link to="/contact-sales" className="inline-block py-2 px-4 rounded-lg bg-white text-propagentic-teal border border-propagentic-teal hover:bg-propagentic-neutral-light text-center font-medium transition-colors">
+                      Contact Sales
+                    </Link>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Social Proof Section */}
+        <div className="max-w-6xl mx-auto mt-24 mb-16">
+          <h2 className="text-3xl font-bold text-center text-propagentic-slate-dark dark:text-white mb-12">
+            Trusted by Property Managers & Contractors
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                quote: "PropAgentic has completely transformed our maintenance workflow. We're saving at least 15 hours per week on maintenance coordination.",
+                author: "Sarah T.",
+                role: "Property Manager, 85 Units",
+                rating: 5
+              },
+              {
+                quote: "As a contractor, the Premium plan has paid for itself many times over. I'm getting higher quality jobs and spending less time on paperwork.",
+                author: "Michael R.",
+                role: "HVAC Specialist",
+                rating: 5
+              },
+              {
+                quote: "The AI classification is surprisingly accurate. It's correctly categorizing maintenance requests and finding the right contractors without my input.",
+                author: "James L.",
+                role: "Real Estate Investor",
+                rating: 4
+              }
+            ].map((testimonial, index) => (
+              <div key={index} className="bg-white dark:bg-propagentic-slate rounded-xl shadow-lg p-6 md:p-8">
+                <div className="flex mb-4">
+                  {Array(5).fill(0).map((_, i) => (
+                    <svg key={i} className={`h-5 w-5 ${i < testimonial.rating ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-propagentic-slate dark:text-propagentic-neutral-light mb-6 italic">"{testimonial.quote}"</p>
+                <div>
+                  <p className="font-bold text-propagentic-slate-dark dark:text-white">{testimonial.author}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{testimonial.role}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* FAQ Section */}

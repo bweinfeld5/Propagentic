@@ -1,118 +1,124 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import { useConnection } from './ConnectionContext';
+import * as demoData from '../utils/demoData';
 
 // Create context
-const DemoModeContext = createContext();
+export const DemoModeContext = createContext({
+  isDemoMode: false,
+  enableDemoMode: () => {},
+  disableDemoMode: () => {},
+  toggleDemoMode: () => {},
+  isAutoFallbackEnabled: false,
+  toggleAutoFallback: () => {}
+});
 
-// Demo mode provider component
+// Custom hook for using the context
+export const useDemoMode = () => useContext(DemoModeContext);
+
+// Provider component
 export const DemoModeProvider = ({ children }) => {
+  // State to track if demo mode is active
   const [isDemoMode, setIsDemoMode] = useState(false);
-  const [demoUser, setDemoUser] = useState(null);
-
-  // Check for demo mode on load
-  useEffect(() => {
-    const demoMode = process.env.REACT_APP_DEMO_MODE === 'true';
-    setIsDemoMode(demoMode);
-    
-    if (demoMode) {
-      // Show initial toast notification
-      toast.success(
-        'Demo mode active - data changes will not be saved', 
-        { 
-          icon: '🧪',
-          duration: 5000,
-          id: 'demo-mode-toast'
-        }
-      );
-      
-      // Load demo user information if available in localStorage
-      const savedDemoUser = localStorage.getItem('propagentic_demo_user');
-      if (savedDemoUser) {
-        try {
-          setDemoUser(JSON.parse(savedDemoUser));
-        } catch (e) {
-          console.error('Error parsing demo user from localStorage', e);
-        }
-      }
-    }
-  }, []);
-
-  // Function to switch between demo roles
-  const switchDemoRole = (role) => {
-    if (!isDemoMode) return;
-    
-    let newDemoUser;
-    
-    switch(role) {
-      case 'landlord':
-        newDemoUser = {
-          uid: 'demo-landlord-123',
-          email: 'demo-landlord@propagentic.com',
-          displayName: 'Demo Landlord',
-          userType: 'landlord',
-          photoURL: 'https://randomuser.me/api/portraits/men/32.jpg'
-        };
-        break;
-      case 'contractor':
-        newDemoUser = {
-          uid: 'demo-contractor-123',
-          email: 'demo-contractor@propagentic.com',
-          displayName: 'Demo Contractor',
-          userType: 'contractor',
-          photoURL: 'https://randomuser.me/api/portraits/women/44.jpg',
-          specialties: ['plumbing', 'electrical', 'general_maintenance']
-        };
-        break;
-      case 'tenant':
-        newDemoUser = {
-          uid: 'demo-tenant-123',
-          email: 'demo-tenant@propagentic.com',
-          displayName: 'Demo Tenant',
-          userType: 'tenant',
-          photoURL: 'https://randomuser.me/api/portraits/men/76.jpg',
-          propertyId: 'demo-property-123'
-        };
-        break;
-      default:
-        return;
-    }
-    
-    setDemoUser(newDemoUser);
-    localStorage.setItem('propagentic_demo_user', JSON.stringify(newDemoUser));
-    
-    // Show notification about role switch
-    toast.success(
-      `Switched to ${role} demo view`,
-      { 
-        icon: '👤',
-        duration: 3000
-      }
-    );
+  // State to track if auto fallback to demo mode is enabled
+  const [isAutoFallbackEnabled, setIsAutoFallbackEnabled] = useState(true);
+  // Track the reason for entering demo mode
+  const [demoModeReason, setDemoModeReason] = useState('');
+  
+  // Get connection status from ConnectionContext
+  const { isOnline, isFirestoreAvailable, getOfflineStatus } = useConnection();
+  
+  // Enable demo mode with a reason
+  const enableDemoMode = (reason = 'user_enabled') => {
+    setIsDemoMode(true);
+    setDemoModeReason(reason);
+    // Save to localStorage for persistence
+    localStorage.setItem('demoModeActive', 'true');
+    localStorage.setItem('demoModeReason', reason);
+    console.log(`Demo mode activated. Reason: ${reason}`);
   };
-
-  // Function to show a write operation notification
-  const notifyWriteBlocked = () => {
+  
+  // Disable demo mode
+  const disableDemoMode = () => {
+    setIsDemoMode(false);
+    setDemoModeReason('');
+    // Save to localStorage for persistence
+    localStorage.setItem('demoModeActive', 'false');
+    localStorage.removeItem('demoModeReason');
+    console.log('Demo mode deactivated');
+  };
+  
+  // Toggle demo mode
+  const toggleDemoMode = () => {
     if (isDemoMode) {
-      toast.error(
-        'Write operations are disabled in demo mode',
-        {
-          icon: '🔒',
-          duration: 3000
-        }
-      );
-      return true; // Operation was blocked
+      disableDemoMode();
+    } else {
+      enableDemoMode('user_toggled');
     }
-    return false; // Operation was not blocked
   };
-
-  // Provide context values
+  
+  // Toggle auto fallback setting
+  const toggleAutoFallback = () => {
+    const newValue = !isAutoFallbackEnabled;
+    setIsAutoFallbackEnabled(newValue);
+    localStorage.setItem('autoFallbackEnabled', newValue.toString());
+    console.log(`Auto fallback to demo mode ${newValue ? 'enabled' : 'disabled'}`);
+  };
+  
+  // Auto-fallback to demo mode when Firebase is unavailable
+  useEffect(() => {
+    const handleConnectionStatus = () => {
+      const connectionStatus = getOfflineStatus();
+      
+      if (isAutoFallbackEnabled && !isDemoMode) {
+        if (connectionStatus === 'offline') {
+          enableDemoMode('offline');
+        } else if (connectionStatus === 'service-disruption') {
+          enableDemoMode('service_disruption');
+        }
+      } else if (isDemoMode && demoModeReason !== 'user_toggled' && demoModeReason !== 'user_enabled') {
+        // If connection is restored and demo mode was auto-enabled, disable it
+        if (connectionStatus === 'online') {
+          disableDemoMode();
+        }
+      }
+    };
+    
+    handleConnectionStatus();
+  }, [isOnline, isFirestoreAvailable, isAutoFallbackEnabled, isDemoMode, demoModeReason, getOfflineStatus]);
+  
+  // Initialize from localStorage on mount
+  useEffect(() => {
+    const storedDemoMode = localStorage.getItem('demoModeActive') === 'true';
+    const storedReason = localStorage.getItem('demoModeReason') || '';
+    const storedAutoFallback = localStorage.getItem('autoFallbackEnabled') !== 'false'; // Default to true
+    
+    setIsDemoMode(storedDemoMode);
+    setDemoModeReason(storedReason);
+    setIsAutoFallbackEnabled(storedAutoFallback);
+  }, []);
+  
+  // Value to be provided to consumers
   const value = {
     isDemoMode,
-    demoUser,
-    switchDemoRole,
-    notifyWriteBlocked
+    enableDemoMode,
+    disableDemoMode,
+    toggleDemoMode,
+    demoModeReason,
+    isAutoFallbackEnabled,
+    toggleAutoFallback,
+    // Expose demo data getters for convenience
+    getDemoUser: demoData.getDemoUser,
+    getDemoUserByEmail: demoData.getDemoUserByEmail,
+    getDemoPropertiesForLandlord: demoData.getDemoPropertiesForLandlord,
+    getDemoPropertyById: demoData.getDemoPropertyById,
+    getDemoTicketsForProperty: demoData.getDemoTicketsForProperty,
+    getDemoTicketsForTenant: demoData.getDemoTicketsForTenant,
+    getDemoTicketsForContractor: demoData.getDemoTicketsForContractor,
+    getDemoTenantsForProperty: demoData.getDemoTenantsForProperty,
+    getDemoNotificationsForUser: demoData.getDemoNotificationsForUser
   };
-
+  
   return (
     <DemoModeContext.Provider value={value}>
       {children}
@@ -120,13 +126,4 @@ export const DemoModeProvider = ({ children }) => {
   );
 };
 
-// Custom hook for using demo mode context
-export const useDemoMode = () => {
-  const context = useContext(DemoModeContext);
-  if (context === undefined) {
-    throw new Error('useDemoMode must be used within a DemoModeProvider');
-  }
-  return context;
-};
-
-export default DemoModeContext; 
+export default DemoModeProvider; 

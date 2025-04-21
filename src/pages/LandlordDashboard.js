@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { db } from '../firebase/config';
-import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
+import { useConnection } from '../context/ConnectionContext';
+import { useDemoMode } from '../context/DemoModeContext';
+import dataService from '../services/dataService';
+import { captureError, withAsyncErrorTracking } from '../utils/errorTracker';
 
 import OverviewCards from '../components/landlord/OverviewCards';
 import RequestFeed from '../components/landlord/RequestFeed';
@@ -11,6 +13,8 @@ import TenantTable from '../components/landlord/TenantTable';
 
 const LandlordDashboard = () => {
   const { currentUser, userProfile, loading: authLoading } = useAuth();
+  const { isOnline, isFirestoreAvailable } = useConnection();
+  const { isDemoMode } = useDemoMode();
   const navigate = useNavigate();
 
   const [properties, setProperties] = useState([]);
@@ -18,6 +22,10 @@ const LandlordDashboard = () => {
   const [tenants, setTenants] = useState([]); // Assuming you fetch tenants separately or derive from properties/tickets
   const [loadingData, setLoadingData] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
+  const [error, setError] = useState(null);
+  const [ticketLoadingError, setTicketLoadingError] = useState(null);
+  const [propertiesLoaded, setPropertiesLoaded] = useState(false);
+  const [ticketsLoading, setTicketsLoading] = useState(true);
 
   // Basic redirect and auth loading check
   useEffect(() => {
@@ -26,88 +34,170 @@ const LandlordDashboard = () => {
     }
   }, [currentUser, userProfile, authLoading, navigate]);
 
-  // Fetch properties
+  // Helper function to load properties from localStorage cache
+  const loadFromCache = () => {
+    try {
+      const cachedData = localStorage.getItem('landlord_properties_cache');
+      if (cachedData) {
+        const parsed = JSON.parse(cachedData);
+        if (parsed.userId === currentUser.uid) {
+          console.log('Using cached properties from localStorage');
+          setProperties(parsed.properties);
+          setPropertiesLoaded(true);
+          setLoadingData(false);
+          
+          // Show cache notification
+          setError(`Using cached data from ${new Date(parsed.timestamp).toLocaleString()}. Some information may be outdated.`);
+          return true;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load from cache:', e);
+    }
+    return false;
+  };
+
+  // Modified error handler that tries cache before showing error
+  const handlePropertyError = (error) => {
+    console.error("Error fetching properties: ", error);
+    captureError(error, 'LandlordDashboard.fetchProperties');
+    
+    // Try to load from cache before showing error
+    if (!loadFromCache()) {
+      setError(error.message || "Failed to load properties. Please try refreshing the page.");
+      setProperties([]);
+    }
+    
+    setLoadingData(false);
+    setPropertiesLoaded(false);
+  };
+
+  // Add an effect to save properties to localStorage whenever they change
+  useEffect(() => {
+    if (properties.length > 0 && currentUser) {
+      try {
+        localStorage.setItem('landlord_properties_cache', JSON.stringify({
+          userId: currentUser.uid,
+          timestamp: Date.now(),
+          properties: properties
+        }));
+        console.log('Properties cached to localStorage');
+      } catch (e) {
+        console.error('Failed to cache properties:', e);
+      }
+    }
+  }, [properties, currentUser?.uid]);
+
+  // Fetch properties using the data service
   useEffect(() => {
     if (!currentUser) return;
     setLoadingData(true);
-    const q = query(collection(db, 'properties'), where('landlordId', '==', currentUser.uid));
-    
-    try {
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const propsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setProperties(propsData);
-      }, (error) => {
-        console.error("Error fetching properties: ", error);
-        // Set empty array on error to prevent rendering issues
-        setProperties([]);
-      });
-      
-      return () => unsubscribe();
-    } catch (error) {
-      console.error("Error setting up properties listener: ", error);
-      setProperties([]);
-      setLoadingData(false);
-    }
-  }, [currentUser]);
+    setError(null); // Reset error state
+    setPropertiesLoaded(false);
 
-  // Fetch maintenance tickets
-  useEffect(() => {
-    if (!currentUser) return;
-    
-    try {
-      // TODO: Refine this query to get tickets linked to the landlord's properties
-      const q = query(collection(db, 'tickets')); 
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const ticketsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date()
-        }));
-        setTickets(ticketsData);
-        setLoadingData(false);
-      }, (error) => {
-        console.error("Error fetching tickets: ", error);
-        setTickets([]);
-        setLoadingData(false);
-      });
-      
-      return () => unsubscribe();
-    } catch (error) {
-      console.error("Error setting up tickets listener: ", error);
-      setTickets([]);
-      setLoadingData(false);
-    }
-  }, [currentUser]);
-
-  // Fetch tenants data
-  useEffect(() => {
-    if (!currentUser) return;
-    
-    // Query users collection for tenants linked to landlord's properties
-    const fetchTenants = async () => {
+    const fetchProperties = withAsyncErrorTracking(async () => {
       try {
-        const tenantsQuery = query(
-          collection(db, 'users'), 
-          where('userType', '==', 'tenant')
+        console.log('Fetching properties for user:', currentUser.uid);
+        // Subscribe to properties with real-time updates
+        const unsubscribe = dataService.subscribeToProperties(
+          // Success callback
+          (propertiesData) => {
+            console.log('Properties data received:', propertiesData.length);
+            setProperties(propertiesData);
+            setLoadingData(false);
+            setPropertiesLoaded(true); // Signal that properties are loaded for ticket loading dependency
+          },
+          // Error callback using our new handler
+          handlePropertyError
         );
-        const tenantsSnapshot = await getDocs(tenantsQuery);
-        const tenantsData = tenantsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+
+        // Return the unsubscribe function for cleanup
+        return unsubscribe;
+      } catch (error) {
+        console.error("Error setting up properties listener: ", error);
+        captureError(error, 'LandlordDashboard.fetchProperties');
+        
+        // Use our error handler
+        handlePropertyError(error);
+        
+        // Return a no-op cleanup function
+        return () => {};
+      }
+    }, 'LandlordDashboard.fetchProperties');
+
+    // Execute the fetch function and store the unsubscribe
+    const unsubscribe = fetchProperties();
+    
+    // Cleanup the subscription when the component unmounts
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  }, [currentUser, isDemoMode]);
+
+  // Fetch maintenance tickets - update to depend on propertiesLoaded
+  useEffect(() => {
+    if (!currentUser || !propertiesLoaded) return; // Only run when properties are loaded
+    
+    setTicketsLoading(true);
+    setTicketLoadingError(null);
+    
+    const fetchTickets = withAsyncErrorTracking(async () => {
+      try {
+        console.log('Properties loaded, now fetching tickets');
+        // Use data service to get tickets for current user
+        const ticketsData = await dataService.getTicketsForCurrentUser();
+        console.log(`Successfully loaded ${ticketsData.length} tickets`);
+        setTickets(ticketsData);
+        setTicketsLoading(false);
+      } catch (error) {
+        console.error("Error fetching tickets: ", error);
+        captureError(error, 'LandlordDashboard.fetchTickets');
+        setTicketLoadingError("Failed to load maintenance tickets. Please try again.");
+        setTickets([]);
+        setTicketsLoading(false);
+      }
+    }, 'LandlordDashboard.fetchTickets');
+
+    fetchTickets();
+  }, [currentUser, propertiesLoaded, isDemoMode]); // Add propertiesLoaded as a dependency
+
+  // Fetch tenants data 
+  useEffect(() => {
+    if (!currentUser) return;
+    
+    const fetchTenants = withAsyncErrorTracking(async () => {
+      try {
+        // Temporarily: Get tenants for all properties
+        // This can be optimized later to get tenants only for specific properties
+        const tenantsData = [];
+        
+        // For each property, get its tenants
+        for (const property of properties) {
+          if (property.id) {
+            const propertyTenants = await dataService.getTenantsForProperty(property.id);
+            tenantsData.push(...propertyTenants);
+          }
+        }
+        
         setTenants(tenantsData);
       } catch (error) {
         console.error("Error fetching tenants: ", error);
+        captureError(error, 'LandlordDashboard.fetchTenants');
         // Set empty array on error to prevent rendering issues
         setTenants([]);
       } finally {
         // Ensure loading state is updated regardless of success/failure
         setLoadingData(false);
       }
-    };
+    }, 'LandlordDashboard.fetchTenants');
 
-    fetchTenants();
-  }, [currentUser]);
+    // Only fetch tenants if we have properties
+    if (properties.length > 0) {
+      fetchTenants();
+    }
+  }, [currentUser, properties, isDemoMode]);
 
   const handleAssignContractor = (ticketId) => {
     console.log("Assign contractor for ticket:", ticketId);
@@ -140,6 +230,106 @@ const LandlordDashboard = () => {
     );
   }
 
+  // Handle zero properties condition with helpful UI
+  if (properties.length === 0 && !loadingData && !error) {
+    return (
+      <div className="space-y-6 p-1 md:p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between">
+          <h1 className="text-2xl font-semibold text-slate-800">Landlord Dashboard</h1>
+          <p className="text-sm text-slate-500">Welcome, {userProfile?.firstName || 'Landlord'}</p>
+        </div>
+        
+        <div className="bg-white rounded-xl shadow-md p-8 text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-teal-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+          <h2 className="text-xl font-medium text-gray-900 mb-2">No Properties Found</h2>
+          <p className="text-gray-500 max-w-md mx-auto mb-6">
+            You don't have any properties in your account yet. Let's add your first property to get started.
+          </p>
+          <div className="space-y-3 max-w-md mx-auto">
+            <button 
+              onClick={() => navigate('/properties/add')}
+              className="w-full py-2.5 px-4 bg-teal-600 text-white rounded-lg shadow hover:bg-teal-700 transition-colors flex items-center justify-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              Add Your First Property
+            </button>
+            
+            {!isDemoMode && (
+              <button 
+                onClick={() => {
+                  const toggleDemoMode = window.confirm("Would you like to view demo data to see how the dashboard works?");
+                  if (toggleDemoMode) {
+                    navigate('/settings?enableDemo=true');
+                  }
+                }}
+                className="w-full py-2.5 px-4 bg-white border border-gray-300 text-gray-700 rounded-lg shadow-sm hover:bg-gray-50 transition-colors flex items-center justify-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                  <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                </svg>
+                View Demo Dashboard
+              </button>
+            )}
+            
+            <button 
+              onClick={() => {
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.accept = '.json';
+                fileInput.onchange = (event) => {
+                  const file = event.target.files[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                      try {
+                        const properties = JSON.parse(e.target.result);
+                        if (Array.isArray(properties)) {
+                          // Import each property
+                          const importProperties = async () => {
+                            setLoadingData(true);
+                            try {
+                              for (const property of properties) {
+                                const { id, ...propertyData } = property;
+                                await dataService.createProperty(propertyData);
+                              }
+                              alert(`Successfully imported ${properties.length} properties`);
+                              window.location.reload();
+                            } catch (error) {
+                              alert(`Error importing properties: ${error.message}`);
+                              setLoadingData(false);
+                            }
+                          };
+                          importProperties();
+                        } else {
+                          alert('Invalid property data format');
+                        }
+                      } catch (error) {
+                        alert(`Error parsing file: ${error.message}`);
+                      }
+                    };
+                    reader.readAsText(file);
+                  }
+                };
+                fileInput.click();
+              }}
+              className="w-full py-2.5 px-4 bg-white border border-gray-300 text-gray-700 rounded-lg shadow-sm hover:bg-gray-50 transition-colors flex items-center justify-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+              Import Properties
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 p-1 md:p-4">
       {/* Page Title */}
@@ -147,6 +337,103 @@ const LandlordDashboard = () => {
         <h1 className="text-2xl font-semibold text-slate-800">Landlord Dashboard</h1>
         <p className="text-sm text-slate-500">Welcome back, {userProfile?.firstName || 'Landlord'}</p>
       </div>
+      
+      {/* Display error if present */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Failed to load properties</h3>
+              <div className="mt-2 text-sm text-red-700">
+                <p>{error}</p>
+              </div>
+              <div className="mt-4">
+                <div className="flex space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoadingData(true);
+                      setError(null);
+                      setTimeout(() => {
+                        // Force re-mount/re-fetch
+                        const user = {...currentUser};
+                        dataService.configure({
+                          isDemoMode,
+                          currentUser: user
+                        });
+                        // Force useEffect to run again
+                        navigate('/dashboard', { replace: true });
+                      }, 100);
+                    }}
+                    className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  >
+                    Retry Loading Properties
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoadingData(true);
+                      setError(null);
+                      // Enable demo mode to see the UI
+                      if (isDemoMode) {
+                        window.location.reload();
+                      } else {
+                        const toggleDemoMode = window.confirm("Would you like to load demo data to view the application features?");
+                        if (toggleDemoMode) {
+                          navigate('/settings?enableDemo=true');
+                        } else {
+                          window.location.reload();
+                        }
+                      }
+                    }}
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    {isDemoMode ? "Refresh Page" : "Use Demo Data"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Display offline mode indicator if applicable */}
+      {!isOnline && (
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4 rounded" role="alert">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-yellow-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium">You are currently in offline mode. Some features may be limited.</p>
+              <p className="text-xs mt-1">Changes will be synchronized when you're back online.</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Display demo mode indicator if applicable */}
+      {isDemoMode && (
+        <div className="bg-indigo-100 border-l-4 border-indigo-500 text-indigo-700 p-4 mb-4 rounded" role="alert">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium">You are viewing demo data. Changes will not be saved.</p>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* 1. Overview Cards Panel */}
       <section aria-labelledby="overview-heading">
@@ -160,11 +447,63 @@ const LandlordDashboard = () => {
           <div className="bg-white rounded-xl shadow-md p-5 h-full">
             <div className="flex items-center justify-between mb-4">
               <h2 id="maintenance-heading" className="text-lg font-medium text-gray-900">Maintenance Requests</h2>
-              <span className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                {tickets.filter(t => t.status !== 'completed').length} Open
-              </span>
+              {!ticketsLoading && !ticketLoadingError && (
+                <span className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                  {tickets.filter(t => t.status !== 'completed').length} Open
+                </span>
+              )}
             </div>
-            <RequestFeed requests={tickets} onAssignContractor={handleAssignContractor} />
+            
+            {/* Show ticket loading error if present */}
+            {ticketLoadingError && (
+              <div className="bg-amber-50 border border-amber-200 rounded-md p-4 mb-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-amber-700">{ticketLoadingError}</p>
+                    <button 
+                      onClick={() => {
+                        setTicketsLoading(true);
+                        setTicketLoadingError(null);
+                        // Force a re-fetch by toggling the state
+                        setPropertiesLoaded(false);
+                        setTimeout(() => setPropertiesLoaded(true), 100);
+                      }}
+                      className="mt-2 text-xs font-medium text-amber-700 hover:text-amber-900 underline"
+                    >
+                      Retry Loading Tickets
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Show loading state */}
+            {ticketsLoading ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="w-8 h-8 border-t-2 border-b-2 border-teal-500 rounded-full animate-spin"></div>
+                <span className="ml-2 text-sm text-gray-500">Loading maintenance requests...</span>
+              </div>
+            ) : (
+              // Show tickets or empty state
+              tickets.length > 0 ? (
+                <RequestFeed requests={tickets} onAssignContractor={handleAssignContractor} />
+              ) : (
+                <div className="text-center py-8 px-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No maintenance requests</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    You don't have any maintenance requests yet.
+                  </p>
+                </div>
+              )
+            )}
           </div>
         </section>
 
@@ -221,6 +560,13 @@ const LandlordDashboard = () => {
                     </span>
                   </div>
                 ))}
+
+                {/* Show placeholder if no tickets */}
+                {tickets.length === 0 && (
+                  <div className="text-center py-3 text-gray-500 text-sm">
+                    No recent activity
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -297,4 +643,4 @@ const LandlordDashboard = () => {
   );
 };
 
-export default LandlordDashboard; 
+export default LandlordDashboard;

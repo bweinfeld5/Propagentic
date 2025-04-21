@@ -14,7 +14,7 @@ import {
 import { db } from '../../firebase/config';
 import { MaintenanceTicket, TicketStatus } from '../../models/schema';
 import { maintenanceTicketConverter, createNewMaintenanceTicket } from '../../models/converters';
-import { addMaintenanceRequestToProperty, removeMaintenanceRequestFromProperty } from './propertyService';
+import { addMaintenanceRequestToProperty, removeMaintenanceRequestFromProperty } from './propertyMaintenanceService';
 
 // Collection references
 const ticketsCollection = collection(db, 'tickets').withConverter(maintenanceTicketConverter);

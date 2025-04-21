@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import Button from '../ui/Button';
 
-const SignupForm = () => {
+const SignupForm = ({ initialRole, isPremium }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [userType, setUserType] = useState('tenant');
+  const [userType, setUserType] = useState(initialRole || 'tenant');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -22,7 +23,15 @@ const SignupForm = () => {
   });
   
   const navigate = useNavigate();
+  const location = useLocation();
   const { register, fetchUserProfile } = useAuth();
+
+  // Set initial role when the prop changes
+  useEffect(() => {
+    if (initialRole) {
+      setUserType(initialRole);
+    }
+  }, [initialRole]);
 
   // Firebase error message mapping for user-friendly messages
   const getErrorMessage = (errorCode) => {
@@ -125,7 +134,7 @@ const SignupForm = () => {
     try {
       // Use the register function from AuthContext
       console.log('Attempting to register user with email:', email);
-      const userCredential = await register(email, password, userType);
+      const userCredential = await register(email, password, userType, isPremium);
       console.log('User registered successfully');
       
       // Fetch user profile data to ensure it's loaded in context
@@ -164,304 +173,246 @@ const SignupForm = () => {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="bg-white rounded-lg p-6">
-        {error && (
-          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
-            <p>{error}</p>
-          </div>
-        )}
+    <>
+      {error && (
+        <div className="bg-danger-subtle dark:bg-danger-darkSubtle border-l-4 border-danger text-red-700 dark:text-red-300 p-4 mb-4 rounded-md" role="alert">
+          <p>{error}</p>
+        </div>
+      )}
+      
+      {success && (
+        <div className="bg-success-subtle dark:bg-success-darkSubtle border-l-4 border-success text-green-700 dark:text-emerald-300 p-4 mb-4 rounded-md" role="alert">
+          <p>Account created successfully! Redirecting...</p>
+        </div>
+      )}
+      
+      {isPremium && (
+        <div className="bg-primary/10 dark:bg-primary/20 border-l-4 border-primary text-primary dark:text-primary-light p-4 mb-4 rounded-md" role="alert">
+          <p><strong>Premium Contractor Account:</strong> Registering for premium plan.</p>
+        </div>
+      )}
+      
+      <form onSubmit={handleSubmit}>
+        <div className="mb-4">
+          <label htmlFor="email-signup" className="block text-sm font-medium text-content dark:text-content-dark mb-1">
+            Email address
+          </label>
+          <input
+            id="email-signup"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary bg-background dark:bg-background-dark text-content dark:text-content-dark placeholder-neutral-400 dark:placeholder-neutral-500 ${
+              validationErrors.email ? 'border-danger' : 'border-border dark:border-border-dark'
+            }`}
+            placeholder="Your email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={loading}
+          />
+          {validationErrors.email && (
+            <p className="mt-1 text-sm text-danger dark:text-red-400">{validationErrors.email}</p>
+          )}
+        </div>
         
-        {success && (
-          <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
-            <p>Account created successfully! Redirecting you to onboarding survey...</p>
-          </div>
-        )}
-        
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email address
-            </label>
+        <div className="mb-4">
+          <label htmlFor="password-signup" className="block text-sm font-medium text-content dark:text-content-dark mb-1">
+            Password
+          </label>
+          <div className="relative">
             <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
+              id="password-signup"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="new-password"
               required
-              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 ${
-                validationErrors.email ? 'border-red-300' : 'border-gray-300'
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary bg-background dark:bg-background-dark text-content dark:text-content-dark placeholder-neutral-400 dark:placeholder-neutral-500 ${
+                validationErrors.password ? 'border-danger' : 'border-border dark:border-border-dark'
               }`}
-              placeholder="Your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Create a password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
             />
-            {validationErrors.email && (
-              <p className="mt-1 text-sm text-red-600">{validationErrors.email}</p>
-            )}
+            <button
+              type="button"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-content-subtle dark:text-content-darkSubtle hover:text-content dark:hover:text-content-dark"
+              onClick={() => setShowPassword(!showPassword)}
+              tabIndex="-1"
+            >
+              {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+            </button>
           </div>
-          
-          <div className="mb-4">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <div className="relative">
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                autoComplete="new-password"
-                required
-                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 ${
-                  validationErrors.password ? 'border-red-300' : 'border-gray-300'
-                }`}
-                placeholder="Create a password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-              />
-              <button
-                type="button"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                onClick={() => setShowPassword(!showPassword)}
-                tabIndex="-1"
-              >
-                {showPassword ? (
-                  <EyeSlashIcon className="h-5 w-5 text-gray-400" />
-                ) : (
-                  <EyeIcon className="h-5 w-5 text-gray-400" />
-                )}
-              </button>
-            </div>
-            {validationErrors.password && (
-              <p className="mt-1 text-sm text-red-600">{validationErrors.password}</p>
-            )}
-            {password.length > 0 && (
-              <div className="mt-2">
-                <div className="flex items-center">
-                  <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full ${
-                        passwordStrength.score <= 2 ? 'bg-red-500' : 
-                        passwordStrength.score <= 3 ? 'bg-yellow-500' : 
-                        'bg-green-500'
-                      }`}
-                      style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
-                    ></div>
-                  </div>
-                  <span className="ml-2 text-xs text-gray-600">{passwordStrength.message}</span>
+          {validationErrors.password && (
+            <p className="mt-1 text-sm text-danger dark:text-red-400">{validationErrors.password}</p>
+          )}
+          {password.length > 0 && (
+            <div className="mt-2">
+              <div className="flex items-center">
+                <div className="flex-1 h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full transition-all duration-300 ${
+                      passwordStrength.score <= 2 ? 'bg-danger' : 
+                      passwordStrength.score <= 3 ? 'bg-warning' : 
+                      'bg-success'
+                    }`}
+                    style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
+                  ></div>
                 </div>
-                <ul className="mt-1 text-xs text-gray-600 space-y-1">
-                  <li className={password.length >= 8 ? 'text-green-600' : ''}>• At least 8 characters</li>
-                  <li className={/[A-Z]/.test(password) ? 'text-green-600' : ''}>• At least one uppercase letter</li>
-                  <li className={/[0-9]/.test(password) ? 'text-green-600' : ''}>• At least one number</li>
-                  <li className={/[^A-Za-z0-9]/.test(password) ? 'text-green-600' : ''}>• At least one special character</li>
-                </ul>
+                <span className="ml-2 text-xs text-content-secondary dark:text-content-darkSecondary">{passwordStrength.message}</span>
               </div>
-            )}
+              <ul className="mt-1 text-xs text-content-subtle dark:text-content-darkSubtle space-y-1">
+                <li className={password.length >= 8 ? 'text-success dark:text-emerald-300' : ''}>• At least 8 characters</li>
+                <li className={/[A-Z]/.test(password) ? 'text-success dark:text-emerald-300' : ''}>• At least one uppercase letter</li>
+                <li className={/[0-9]/.test(password) ? 'text-success dark:text-emerald-300' : ''}>• At least one number</li>
+                <li className={/[^A-Za-z0-9]/.test(password) ? 'text-success dark:text-emerald-300' : ''}>• At least one special character</li>
+              </ul>
+            </div>
+          )}
+        </div>
+        
+        <div className="mb-4">
+          <label htmlFor="confirm-password-signup" className="block text-sm font-medium text-content dark:text-content-dark mb-1">
+            Confirm Password
+          </label>
+          <div className="relative">
+            <input
+              id="confirm-password-signup"
+              name="confirm-password"
+              type={showConfirmPassword ? "text" : "password"}
+              autoComplete="new-password"
+              required
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary bg-background dark:bg-background-dark text-content dark:text-content-dark placeholder-neutral-400 dark:placeholder-neutral-500 ${
+                validationErrors.confirmPassword ? 'border-danger' : 'border-border dark:border-border-dark'
+              }`}
+              placeholder="Confirm your password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              disabled={loading}
+            />
+            <button
+              type="button"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-content-subtle dark:text-content-darkSubtle hover:text-content dark:hover:text-content-dark"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              tabIndex="-1"
+            >
+              {showConfirmPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+            </button>
           </div>
-          
-          <div className="mb-4">
-            <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-1">
-              Confirm Password
-            </label>
-            <div className="relative">
+          {validationErrors.confirmPassword && (
+            <p className="mt-1 text-sm text-danger dark:text-red-400">{validationErrors.confirmPassword}</p>
+          )}
+        </div>
+        
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-content dark:text-content-dark mb-2">
+            I am a:
+          </label>
+          <div className="grid grid-cols-3 gap-3">
+            {[ 'tenant', 'landlord', 'contractor' ].map((type) => (
+              <div key={type}>
+                <input
+                  type="radio"
+                  id={type}
+                  name="userType"
+                  value={type}
+                  className="sr-only peer"
+                  checked={userType === type}
+                  onChange={() => setUserType(type)}
+                  disabled={loading || initialRole}
+                />
+                <label
+                  htmlFor={type}
+                  className={`cursor-pointer block text-center py-2 px-4 border rounded-md transition-colors duration-150 
+                    border-border dark:border-border-dark text-content-secondary dark:text-content-darkSecondary 
+                    peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary dark:peer-checked:text-primary-light dark:peer-checked:bg-primary/20 
+                    ${initialRole ? 'opacity-60 cursor-not-allowed' : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50'}`}
+                >
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        <div className="mb-6">
+          <div className="flex items-start">
+            <div className="flex items-center h-5">
               <input
-                id="confirm-password"
-                name="confirm-password"
-                type={showConfirmPassword ? "text" : "password"}
-                autoComplete="new-password"
-                required
-                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 ${
-                  validationErrors.confirmPassword ? 'border-red-300' : 'border-gray-300'
-                }`}
-                placeholder="Confirm your password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                id="terms-signup"
+                name="terms"
+                type="checkbox"
+                className="h-4 w-4 text-primary focus:ring-primary border-border dark:border-border-dark rounded bg-background dark:bg-background-dark"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
                 disabled={loading}
               />
-              <button
-                type="button"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                tabIndex="-1"
-              >
-                {showConfirmPassword ? (
-                  <EyeSlashIcon className="h-5 w-5 text-gray-400" />
-                ) : (
-                  <EyeIcon className="h-5 w-5 text-gray-400" />
-                )}
-              </button>
             </div>
-            {validationErrors.confirmPassword && (
-              <p className="mt-1 text-sm text-red-600">{validationErrors.confirmPassword}</p>
+            <div className="ml-3 text-sm">
+              <label htmlFor="terms-signup" className="text-content dark:text-content-dark">
+                I agree to the{' '}
+                <a href="/terms" className="text-primary hover:text-primary-dark dark:hover:text-primary-light underline">
+                  Terms of Service
+                </a>{' '}
+                and{' '}
+                <a href="/privacy" className="text-primary hover:text-primary-dark dark:hover:text-primary-light underline">
+                  Privacy Policy
+                </a>
+              </label>
+            </div>
+          </div>
+          {validationErrors.terms && (
+            <p className="mt-1 text-sm text-danger dark:text-red-400">{validationErrors.terms}</p>
+          )}
+        </div>
+        
+        <div className="mb-6">
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={loading || Object.values(validationErrors).some(err => err !== '')}
+            fullWidth
+          >
+            {loading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Creating Account...
+              </>
+            ) : (
+              'Sign Up'
             )}
-          </div>
-          
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              I am a:
-            </label>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <input
-                  type="radio"
-                  id="tenant"
-                  name="userType" 
-                  value="tenant"
-                  className="sr-only"
-                  checked={userType === 'tenant'}
-                  onChange={() => setUserType('tenant')}
-                  disabled={loading}
-                />
-                <label
-                  htmlFor="tenant"
-                  className={`cursor-pointer block text-center py-2 px-4 border rounded-md ${
-                    userType === 'tenant'
-                      ? 'bg-teal-50 border-teal-500 text-teal-700'
-                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  Tenant
-                </label>
-              </div>
-              <div>
-                <input
-                  type="radio"
-                  id="landlord"
-                  name="userType"
-                  value="landlord"
-                  className="sr-only"
-                  checked={userType === 'landlord'}
-                  onChange={() => setUserType('landlord')}
-                  disabled={loading}
-                />
-                <label
-                  htmlFor="landlord"
-                  className={`cursor-pointer block text-center py-2 px-4 border rounded-md ${
-                    userType === 'landlord'
-                      ? 'bg-teal-50 border-teal-500 text-teal-700'
-                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  Landlord
-                </label>
-              </div>
-              <div>
-                <input
-                  type="radio"
-                  id="contractor"
-                  name="userType"
-                  value="contractor"
-                  className="sr-only"
-                  checked={userType === 'contractor'}
-                  onChange={() => setUserType('contractor')}
-                  disabled={loading}
-                />
-                <label
-                  htmlFor="contractor"
-                  className={`cursor-pointer block text-center py-2 px-4 border rounded-md ${
-                    userType === 'contractor'
-                      ? 'bg-teal-50 border-teal-500 text-teal-700'
-                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  Contractor
-                </label>
-              </div>
-            </div>
-          </div>
-          
-          <div className="mb-6">
-            <div className="flex items-start">
-              <div className="flex items-center h-5">
-                <input
-                  id="terms"
-                  name="terms"
-                  type="checkbox"
-                  className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
-                  checked={termsAccepted}
-                  onChange={(e) => setTermsAccepted(e.target.checked)}
-                  disabled={loading}
-                />
-              </div>
-              <div className="ml-3 text-sm">
-                <label htmlFor="terms" className="text-gray-700">
-                  I agree to the{' '}
-                  <a href="/terms" className="text-teal-600 hover:text-teal-500">
-                    Terms of Service
-                  </a>{' '}
-                  and{' '}
-                  <a href="/privacy" className="text-teal-600 hover:text-teal-500">
-                    Privacy Policy
-                  </a>
-                </label>
-              </div>
-            </div>
-            {validationErrors.terms && (
-              <p className="mt-1 text-sm text-red-600">{validationErrors.terms}</p>
-            )}
-          </div>
-          
-          <div className="mb-6">
-            <button
-              type="submit"
-              disabled={loading}
-              className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white 
-                ${loading 
-                  ? 'bg-teal-400 cursor-not-allowed' 
-                  : 'bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500'
-                }`}
-            >
-              {loading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Creating Account...
-                </>
-              ) : (
-                'Sign Up'
-              )}
-            </button>
-          </div>
-          
-          <div className="flex items-center my-4">
-            <div className="flex-grow h-px bg-gray-300"></div>
-            <span className="mx-4 text-sm text-gray-500">Or sign up with</span>
-            <div className="flex-grow h-px bg-gray-300"></div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              className="flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
-              disabled={loading}
-            >
-              <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-              </svg>
-              Google
-            </button>
-            <button
-              type="button"
-              className="flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
-              disabled={loading}
-            >
-              <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" />
-              </svg>
-              Facebook
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+          </Button>
+        </div>
+        
+        <div className="flex items-center my-4">
+          <div className="flex-grow h-px bg-border dark:bg-border-dark"></div>
+          <span className="mx-4 text-sm text-content-subtle dark:text-content-darkSubtle">Or sign up with</span>
+          <div className="flex-grow h-px bg-border dark:bg-border-dark"></div>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3">
+          <Button type="button" variant="outline" disabled={loading}>
+            <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+            </svg>
+            Google
+          </Button>
+          <Button type="button" variant="outline" disabled={loading}>
+            <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" />
+            </svg>
+            Facebook
+          </Button>
+        </div>
+      </form>
+    </>
   );
 };
 

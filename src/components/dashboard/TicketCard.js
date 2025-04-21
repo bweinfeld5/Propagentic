@@ -1,6 +1,6 @@
 import React from 'react';
 import { format } from 'date-fns';
-import { BadgeCheckIcon, LightningBoltIcon } from '@heroicons/react/solid';
+import { CheckBadgeIcon, BoltIcon } from '@heroicons/react/24/solid';
 
 const TicketCard = ({ ticket }) => {
   // Extract properties from ticket
@@ -82,7 +82,7 @@ const TicketCard = ({ ticket }) => {
           {/* AI badge if classified */}
           {isAIClassified && (
             <span className="inline-flex items-center text-xs text-propagentic-teal" title="AI Classified">
-              <BadgeCheckIcon className="w-4 h-4 mr-1" />
+              <CheckBadgeIcon className="w-4 h-4 mr-1" />
               AI Classified
             </span>
           )}

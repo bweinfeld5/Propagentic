@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { UserCircleIcon } from '@heroicons/react/24/outline';
+import { useConnection } from '../../context/ConnectionContext';
+import { UserCircleIcon, WifiIcon, SignalSlashIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import NotificationBell from '../notifications/NotificationBell';
 import NotificationPanel from './NotificationPanel';
+import NotificationErrorBoundary from '../shared/NotificationErrorBoundary';
 
 // HeaderNav component with sidebar toggle removed
 const HeaderNav = () => {
   const { userProfile, logout } = useAuth();
+  const { isOnline, isFirestoreAvailable, getOfflineStatus, getOfflineDurationText } = useConnection();
   const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
+  const connectionStatus = getOfflineStatus();
 
   // Get dashboard title based on user type
   const getDashboardTitle = () => {
@@ -34,6 +38,29 @@ const HeaderNav = () => {
     }
   };
 
+  // Offline indicator styles based on connection status
+  const getConnectionStatusIndicator = () => {
+    if (connectionStatus === 'online') {
+      return null; // Don't show indicator when online
+    }
+    
+    if (connectionStatus === 'service-disruption') {
+      return (
+        <div className="flex items-center px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full mr-2">
+          <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
+          <span className="text-xs font-medium">Service Disruption</span>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="flex items-center px-3 py-1 bg-red-100 text-red-800 rounded-full mr-2">
+        <SignalSlashIcon className="h-4 w-4 mr-1" />
+        <span className="text-xs font-medium">Offline Mode</span>
+      </div>
+    );
+  };
+
   return (
     <header className="flex justify-between items-center p-4 bg-white border-b border-slate-200 sticky top-0 z-10">
       {/* Left side: Page title */}
@@ -41,9 +68,14 @@ const HeaderNav = () => {
         <h1 className="text-lg font-semibold text-slate-800">{getDashboardTitle()}</h1>
       </div>
 
-      {/* Right side: Notifications and Profile Dropdown */}
+      {/* Right side: Connection status, Notifications and Profile Dropdown */}
       <div className="flex items-center space-x-4">
-        <NotificationBell onClick={() => setNotificationPanelOpen(true)} />
+        {/* Connection status indicator */}
+        {getConnectionStatusIndicator()}
+
+        <NotificationErrorBoundary>
+          <NotificationBell onClick={() => setNotificationPanelOpen(true)} />
+        </NotificationErrorBoundary>
 
         {/* Profile Dropdown Placeholder */}
         <div className="relative">
@@ -62,10 +94,12 @@ const HeaderNav = () => {
         </div>
 
         {/* Notification Panel */}
-        <NotificationPanel 
-          isOpen={notificationPanelOpen} 
-          onClose={() => setNotificationPanelOpen(false)} 
-        />
+        <NotificationErrorBoundary>
+          <NotificationPanel 
+            isOpen={notificationPanelOpen} 
+            onClose={() => setNotificationPanelOpen(false)} 
+          />
+        </NotificationErrorBoundary>
       </div>
     </header>
   );

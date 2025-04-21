@@ -1,8 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { SafeMotion, AnimatePresence } from '../../shared/SafeMotion';
 import EnhancedRoleSelector from './EnhancedRoleSelector';
 import StickyHeader from './StickyHeader';
+import { UIComponentErrorBoundary } from '../../shared/ErrorBoundary';
+import Button from '../../ui/Button';
+
+// Define role-specific sub-headlines
+const roleSubheadlines = {
+  Landlord: "Effortlessly manage properties, track maintenance, communicate with tenants, and handle payments – all in one place.",
+  Tenant: "Easily submit maintenance requests, pay rent online, and communicate with your landlord through a simple, modern interface.",
+  Contractor: "Receive job requests, manage schedules, submit invoices, and get paid faster by connecting directly with landlords.",
+};
 
 const EnhancedHeroSection = () => {
   const [selectedRole, setSelectedRole] = useState('Landlord');
@@ -35,125 +44,148 @@ const EnhancedHeroSection = () => {
   
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 100) {
-        setIsVisible(false);
-      } else {
-        setIsVisible(true);
-      }
+      setIsVisible(window.scrollY <= 100);
     };
-    
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
   
+  // Memoize particle styles to avoid recalculation on every render
+  const particles = useMemo(() => {
+    const numParticles = 15; // Reduced particle count
+    return [...Array(numParticles)].map((_, i) => ({
+      id: i,
+      style: {
+        top: `${Math.random() * 100}%`,
+        left: `${Math.random() * 100}%`,
+        width: `${Math.random() * 15 + 5}px`, // Slightly smaller max size
+        height: `${Math.random() * 15 + 5}px`, // Slightly smaller max size
+      },
+      animate: {
+        y: [0, Math.random() * 30 - 15],
+        x: [0, Math.random() * 30 - 15],
+        scale: [1, Math.random() * 0.5 + 0.7, 1], // Less drastic scaling
+      },
+      transition: {
+        duration: Math.random() * 6 + 6, // Slightly slower animation
+        repeat: Infinity,
+        repeatType: 'reverse',
+        ease: "easeInOut" // Smoother easing
+      }
+    }));
+  }, []); // Empty dependency array ensures this runs only once
+  
   return (
-    <div className="relative">
-      {/* Background with gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-propagentic-slate-dark to-propagentic-neutral-dark overflow-hidden">
-        {/* Decorative particles */}
-        <div className="absolute inset-0 overflow-hidden opacity-20">
-          {[...Array(20)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute rounded-full bg-propagentic-teal"
-              style={{
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                width: `${Math.random() * 20 + 5}px`,
-                height: `${Math.random() * 20 + 5}px`,
-              }}
-              animate={{
-                y: [0, Math.random() * 50 - 25],
-                x: [0, Math.random() * 50 - 25],
-                scale: [1, Math.random() + 0.5, 1],
-              }}
-              transition={{
-                duration: Math.random() * 5 + 5,
-                repeat: Infinity,
-                repeatType: 'reverse',
-              }}
-            />
-          ))}
-        </div>
-      </div>
-      
-      {/* Sticky header */}
-      <StickyHeader />
-      
-      {/* Hero content */}
-      <div className="relative pt-32 pb-24 md:pt-40 md:pb-32">
-        <div className="container mx-auto px-6">
-          <motion.div
-            className="text-center max-w-4xl mx-auto"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <motion.h1 
-              className="text-4xl md:text-6xl font-bold text-propagentic-neutral-lightest mb-6"
-              variants={itemVariants}
-            >
-              Property Management <span className="text-propagentic-teal">Reimagined</span> with AI
-            </motion.h1>
-            
-            <motion.p 
-              className="text-xl md:text-2xl text-propagentic-neutral-light mb-12 max-w-3xl mx-auto"
-              variants={itemVariants}
-            >
-              Connect landlords, tenants, and contractors with our intelligent 
-              property management platform that handles everything from 
-              maintenance requests to payments.
-            </motion.p>
-            
-            <motion.div
-              variants={itemVariants}
-              className="mb-16"
-            >
-              <EnhancedRoleSelector
-                roles={roles}
-                selectedRole={selectedRole}
-                setSelectedRole={setSelectedRole}
+    <UIComponentErrorBoundary componentName="Hero Section">
+      <div className="relative">
+        {/* Background - Updated for Light/Dark Theme */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-dark via-primary to-primary-light dark:from-neutral-900 dark:to-neutral-800 overflow-hidden">
+          {/* Particles - Updated Color */}
+          <div className="absolute inset-0 overflow-hidden opacity-15">
+            {particles.map((particle) => (
+              <SafeMotion.div
+                key={particle.id}
+                className="absolute rounded-full bg-primary-light dark:bg-primary/50"
+                style={particle.style}
+                initial={false}
+                animate={particle.animate}
+                transition={particle.transition}
               />
-            </motion.div>
-            
-            <motion.div 
-              className="mt-8 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 justify-center"
-              variants={itemVariants}
-            >
-              <Link 
-                to={`/auth?tab=signup&role=${selectedRole.toLowerCase()}`} 
-                className="bg-propagentic-teal text-propagentic-neutral-lightest px-8 py-4 rounded-lg font-medium hover:bg-propagentic-teal-dark transform hover:-translate-y-0.5 transition duration-150 text-center"
-              >
-                Get Started Free
-              </Link>
-              <Link 
-                to="/demo" 
-                className="border-2 border-propagentic-neutral-lightest text-propagentic-neutral-lightest px-8 py-4 rounded-lg font-medium hover:bg-propagentic-neutral-lightest hover:bg-opacity-20 transform hover:-translate-y-0.5 transition duration-150 text-center"
-              >
-                Watch Demo
-              </Link>
-            </motion.div>
-          </motion.div>
+            ))}
+          </div>
         </div>
-      </div>
-      
-      {/* Scroll indicator */}
-      <motion.div 
-        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-propagentic-neutral-lightest flex flex-col items-center"
-        animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20 }}
-        transition={{ duration: 0.3 }}
-      >
-        <span className="text-sm mb-2">Scroll to explore</span>
-        <motion.div
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
+        
+        <StickyHeader />
+        
+        {/* Hero content */}
+        <div className="relative pt-32 pb-24 md:pt-40 md:pb-32">
+          <div className="container mx-auto px-6">
+            <SafeMotion.div
+              className="text-center max-w-4xl mx-auto"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              <SafeMotion.h1 
+                className="text-4xl md:text-6xl font-bold text-white mb-6"
+                variants={itemVariants}
+              >
+                Property Management <span className="text-primary-light">Reimagined</span> with AI
+              </SafeMotion.h1>
+              
+              <div className="min-h-[100px] md:min-h-[120px] mb-12 flex items-center justify-center">
+                <AnimatePresence mode="wait">
+                  <SafeMotion.p 
+                    key={selectedRole}
+                    className="text-xl md:text-2xl text-neutral-100 max-w-3xl mx-auto"
+                    variants={itemVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit={{ opacity: 0, y: -20, transition: { duration: 0.15 } }}
+                  >
+                    {roleSubheadlines[selectedRole]}
+                  </SafeMotion.p>
+                </AnimatePresence>
+              </div>
+              
+              <SafeMotion.div
+                variants={itemVariants}
+                className="mb-16"
+              >
+                <EnhancedRoleSelector
+                  roles={roles}
+                  selectedRole={selectedRole}
+                  setSelectedRole={setSelectedRole}
+                />
+              </SafeMotion.div>
+              
+              <SafeMotion.div 
+                className="mt-8 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6 justify-center"
+                variants={itemVariants}
+              >
+                <Button 
+                  to={`/auth?tab=signup&role=${selectedRole.toLowerCase()}`}
+                  variant="light"
+                  size="lg"
+                  className="px-10 py-4 font-semibold"
+                >
+                  Get Started Free
+                </Button>
+                <Button 
+                  to="/demo" 
+                  variant="outline-inverse"
+                  size="lg"
+                  className="px-8 py-4 font-medium"
+                >
+                  Watch Demo
+                </Button>
+              </SafeMotion.div>
+            </SafeMotion.div>
+          </div>
+        </div>
+        
+        <SafeMotion.div 
+          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-white flex flex-col items-center pointer-events-none"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: isVisible ? 1 : 0 }}
+          transition={{ duration: 0.5 }}
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-          </svg>
-        </motion.div>
-      </motion.div>
-    </div>
+          <span className="text-sm mb-3">Scroll to explore</span>
+          <SafeMotion.div
+            className="w-3 h-3 bg-primary-light rounded-full shadow-lg"
+            animate={{
+              scale: [1, 1.5, 1],
+              opacity: [0.7, 1, 0.7],
+            }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          />
+        </SafeMotion.div>
+      </div>
+    </UIComponentErrorBoundary>
   );
 };
 

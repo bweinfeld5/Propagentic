@@ -19,20 +19,29 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   // Register a new user with user type
-  const register = async (email, password, userType) => {
+  const register = async (email, password, userType, isPremium = false) => {
     // Create user in Firebase Auth
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     
-    // Store additional user data in Firestore
-    await setDoc(doc(db, 'users', user.uid), {
+    // Prepare user data object
+    const userData = {
       email,
       userType,
       role: userType, // Add role field to match userType for backwards compatibility
       createdAt: serverTimestamp(),
       uid: user.uid,
       onboardingComplete: false // Set default onboarding state
-    });
+    };
+    
+    // Add premium flag for contractor accounts
+    if (userType === 'contractor' && isPremium) {
+      userData.isPremium = true;
+      userData.subscriptionTier = 'premium';
+    }
+    
+    // Store user data in Firestore
+    await setDoc(doc(db, 'users', user.uid), userData);
     
     return userCredential;
   };
@@ -112,7 +121,9 @@ export const AuthProvider = ({ children }) => {
           displayName: profileData.name,
           userType: profileData.userType,
           role: profileData.role,
-          onboardingComplete: profileData.onboardingComplete
+          onboardingComplete: profileData.onboardingComplete,
+          isPremium: profileData.isPremium,
+          subscriptionTier: profileData.subscriptionTier
         }));
         
         return profileData;
@@ -137,6 +148,10 @@ export const AuthProvider = ({ children }) => {
   const isContractor = () => {
     return userProfile?.userType === 'contractor' || userProfile?.role === 'contractor';
   };
+  
+  const isPremiumContractor = () => {
+    return isContractor() && (userProfile?.isPremium === true || userProfile?.subscriptionTier === 'premium');
+  };
 
   // Set up an auth state observer
   useEffect(() => {
@@ -153,7 +168,9 @@ export const AuthProvider = ({ children }) => {
           email: user.email,
           displayName: user.displayName,
           userType: profile?.userType,
-          onboardingComplete: profile?.onboardingComplete
+          onboardingComplete: profile?.onboardingComplete,
+          isPremium: profile?.isPremium,
+          subscriptionTier: profile?.subscriptionTier
         }));
         
         console.log('Auth state changed, user logged in with profile:', profile);
@@ -181,7 +198,8 @@ export const AuthProvider = ({ children }) => {
     fetchUserProfile,
     isLandlord,
     isTenant,
-    isContractor
+    isContractor,
+    isPremiumContractor
   };
 
   return (

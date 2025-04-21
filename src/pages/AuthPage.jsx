@@ -4,6 +4,7 @@ import { Tab } from '@headlessui/react';
 import { useAuth } from '../context/AuthContext';
 import SignupForm from '../components/auth/SignupForm';
 import HomeNavLink from '../components/layout/HomeNavLink';
+import Button from '../components/ui/Button';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 function classNames(...classes) {
@@ -139,7 +140,7 @@ const AuthPage = () => {
     return (
       <div className="space-y-6">
         {error && (
-          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md" role="alert">
+          <div className="bg-danger-subtle dark:bg-danger-darkSubtle border-l-4 border-danger text-red-700 dark:text-red-300 p-4 rounded-md" role="alert">
             <p>{error}</p>
           </div>
         )}
@@ -147,7 +148,7 @@ const AuthPage = () => {
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="email-address" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="email-address" className="block text-sm font-medium text-content dark:text-content-dark mb-1">
                 Email address
               </label>
               <input
@@ -156,7 +157,7 @@ const AuthPage = () => {
                 type="email"
                 autoComplete="email"
                 required
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-border dark:border-border-dark placeholder-neutral-400 dark:placeholder-neutral-500 text-content dark:text-content-dark bg-background dark:bg-background-dark focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -165,7 +166,7 @@ const AuthPage = () => {
             </div>
             
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-content dark:text-content-dark mb-1">
                 Password
               </label>
               <div className="relative">
@@ -175,7 +176,7 @@ const AuthPage = () => {
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   required
-                  className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm"
+                  className="appearance-none rounded-md relative block w-full px-3 py-2 border border-border dark:border-border-dark placeholder-neutral-400 dark:placeholder-neutral-500 text-content dark:text-content-dark bg-background dark:bg-background-dark focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -183,14 +184,14 @@ const AuthPage = () => {
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-content-subtle dark:text-content-darkSubtle hover:text-content dark:hover:text-content-dark"
                   onClick={togglePasswordVisibility}
                   tabIndex="-1"
                 >
                   {showPassword ? (
-                    <EyeSlashIcon className="h-5 w-5 text-gray-400" />
+                    <EyeSlashIcon className="h-5 w-5" />
                   ) : (
-                    <EyeIcon className="h-5 w-5 text-gray-400" />
+                    <EyeIcon className="h-5 w-5" />
                   )}
                 </button>
               </div>
@@ -203,26 +204,27 @@ const AuthPage = () => {
                 id="remember-me"
                 name="remember-me"
                 type="checkbox"
-                className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
+                className="h-4 w-4 text-primary focus:ring-primary border-border dark:border-border-dark rounded bg-background dark:bg-background-dark"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
               />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+              <label htmlFor="remember-me" className="ml-2 block text-sm text-content dark:text-content-dark">
                 Remember me
               </label>
             </div>
             <div className="text-sm">
-              <Link to="/forgot-password" className="font-medium text-teal-600 hover:text-teal-500">
+              <Link to="/forgot-password" className="font-medium text-primary hover:text-primary-dark dark:hover:text-primary-light">
                 Forgot your password?
               </Link>
             </div>
           </div>
 
           <div>
-            <button
+            <Button
               type="submit"
+              variant="primary"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-75"
+              fullWidth
             >
               {loading ? (
                 <>
@@ -235,19 +237,19 @@ const AuthPage = () => {
               ) : (
                 'Sign in'
               )}
-            </button>
+            </Button>
           </div>
           
           <div className="flex items-center my-4">
-            <div className="flex-grow h-px bg-gray-300"></div>
-            <span className="mx-4 text-sm text-gray-500">Or sign in with</span>
-            <div className="flex-grow h-px bg-gray-300"></div>
+            <div className="flex-grow h-px bg-border dark:bg-border-dark"></div>
+            <span className="mx-4 text-sm text-content-subtle dark:text-content-darkSubtle">Or sign in with</span>
+            <div className="flex-grow h-px bg-border dark:bg-border-dark"></div>
           </div>
           
           <div className="grid grid-cols-2 gap-3">
-            <button
+            <Button
               type="button"
-              className="flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+              variant="outline"
               disabled={loading}
             >
               <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
@@ -257,17 +259,17 @@ const AuthPage = () => {
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
               </svg>
               Google
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+              variant="outline"
               disabled={loading}
             >
-              <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="h-5 w-5 mr-2" fill="#1877F2" viewBox="0 0 24 24">
                 <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" />
               </svg>
               Facebook
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -275,21 +277,21 @@ const AuthPage = () => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background-subtle dark:bg-background-dark py-12 px-4 sm:px-6 lg:px-8">
       <div className="absolute top-4 left-4 sm:top-8 sm:left-8">
-        <HomeNavLink className="text-base flex items-center" />
+        <HomeNavLink className="text-base flex items-center text-content dark:text-content-dark hover:text-primary" />
       </div>
       
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+      <div className="max-w-md w-full bg-background dark:bg-background-darkSubtle rounded-lg shadow-md p-8 border border-border dark:border-border-dark">
         <Tab.Group selectedIndex={selectedIndex} onChange={handleTabChange}>
-          <Tab.List className="flex rounded-xl bg-gray-100 p-1 mb-8">
+          <Tab.List className="flex rounded-xl bg-neutral-100 dark:bg-neutral-800 p-1 mb-8">
             <Tab
               className={({ selected }) =>
                 classNames(
-                  'w-full rounded-lg py-2.5 text-sm font-medium leading-5 transition-all duration-100 ease-in-out',
+                  'w-full rounded-lg py-2.5 text-sm font-medium leading-5 transition-all duration-100 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary',
                   selected
-                    ? 'bg-white text-teal-700 shadow'
-                    : 'text-gray-600 hover:bg-white/[0.12] hover:text-teal-600'
+                    ? 'bg-background dark:bg-background-dark text-primary shadow'
+                    : 'text-content-secondary dark:text-content-darkSecondary hover:bg-background/60 dark:hover:bg-background-dark/60 hover:text-primary'
                 )
               }
             >
@@ -298,10 +300,10 @@ const AuthPage = () => {
             <Tab
               className={({ selected }) =>
                 classNames(
-                  'w-full rounded-lg py-2.5 text-sm font-medium leading-5 transition-all duration-100 ease-in-out',
+                  'w-full rounded-lg py-2.5 text-sm font-medium leading-5 transition-all duration-100 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary',
                   selected
-                    ? 'bg-white text-teal-700 shadow'
-                    : 'text-gray-600 hover:bg-white/[0.12] hover:text-teal-600'
+                    ? 'bg-background dark:bg-background-dark text-primary shadow'
+                    : 'text-content-secondary dark:text-content-darkSecondary hover:bg-background/60 dark:hover:bg-background-dark/60 hover:text-primary'
                 )
               }
             >
@@ -310,13 +312,13 @@ const AuthPage = () => {
           </Tab.List>
           <Tab.Panels>
             <Tab.Panel>
-              <h2 className="text-center text-2xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-center text-2xl font-extrabold text-content dark:text-content-dark mb-6">
                 Sign in to Propagentic
               </h2>
               <LoginForm />
             </Tab.Panel>
             <Tab.Panel>
-              <h2 className="text-center text-2xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-center text-2xl font-extrabold text-content dark:text-content-dark mb-6">
                 Create your account
               </h2>
               <SignupForm />

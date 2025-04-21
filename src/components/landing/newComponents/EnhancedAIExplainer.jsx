@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { SafeMotion } from '../../shared/SafeMotion';
+import { UIComponentErrorBoundary } from '../../shared/ErrorBoundary';
 
 const steps = [
   {
@@ -90,107 +92,61 @@ const EnhancedAIExplainer = () => {
   }, []);
   
   return (
-    <section className="py-16 md:py-24 bg-propagentic-neutral-lightest dark:bg-propagentic-slate-dark">
-      <div className="container mx-auto px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-propagentic-slate-dark dark:text-propagentic-neutral-lightest mb-4">
-            How AI Powers Our Platform
-          </h2>
-          <p className="text-xl text-propagentic-slate dark:text-propagentic-neutral-light max-w-3xl mx-auto">
-            Our intelligent system streamlines the entire maintenance workflow from request to completion.
-          </p>
-          <motion.button
-            onClick={handlePlayDemo}
-            disabled={isPlaying}
-            className="mt-6 inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-propagentic-neutral-lightest bg-propagentic-teal hover:bg-propagentic-teal-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-propagentic-teal disabled:opacity-70"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            {isPlaying ? (
-              <span className="flex items-center">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-propagentic-neutral-lightest" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Playing Demo...
-              </span>
-            ) : (
-              <>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                </svg>
-                Play Demo
-              </>
-            )}
-          </motion.button>
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          {/* Steps list */}
-          <div className="space-y-8">
+    <UIComponentErrorBoundary componentName="AI Features Section">
+      <section className="py-20 bg-gradient-to-br from-propagentic-teal/5 to-propagentic-blue/5">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-propagentic-slate-dark dark:text-white mb-4">
+              How AI Powers Our Platform
+            </h2>
+            <p className="max-w-2xl mx-auto text-gray-600 dark:text-gray-300">
+              PropAgentic leverages advanced artificial intelligence and machine learning
+              to streamline property management workflows and deliver actionable insights.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-5xl mx-auto">
             {steps.map((step, index) => (
-              <motion.div
-                key={index}
-                onClick={() => handleStepClick(index)}
-                className={`flex cursor-pointer rounded-lg p-4 transition-all duration-300 ${
-                  activeStep === index 
-                    ? 'bg-propagentic-teal bg-opacity-10 border-l-4 border-propagentic-teal' 
-                    : 'hover:bg-propagentic-neutral-light dark:hover:bg-propagentic-neutral-dark border-l-4 border-transparent'
-                }`}
-                whileHover={{ x: activeStep === index ? 0 : 5 }}
-              >
-                <div className="mr-4 flex-shrink-0">
-                  {step.icon}
-                </div>
-                <div>
-                  <h3 className={`text-lg font-semibold mb-1 transition-colors duration-200 ${
-                    activeStep === index 
-                      ? 'text-propagentic-teal' 
-                      : 'text-propagentic-slate-dark dark:text-propagentic-neutral-lightest'
-                  }`}>
-                    {index + 1}. {step.title}
-                  </h3>
-                  <p className="text-propagentic-slate dark:text-propagentic-neutral-light">
-                    {step.description}
-                  </p>
-                </div>
-              </motion.div>
+              <FeatureCard key={index} feature={step} />
             ))}
           </div>
-          
-          {/* Visual representation */}
-          <div className="relative rounded-xl bg-propagentic-neutral-light dark:bg-propagentic-neutral-dark overflow-hidden shadow-card min-h-[400px] flex items-center justify-center">
-            <div className="p-8 text-center">
-              <div className="mb-6">
-                {steps[activeStep].icon}
-              </div>
-              <h3 className="text-2xl font-bold text-propagentic-slate-dark dark:text-propagentic-neutral-lightest mb-4">
-                {steps[activeStep].title}
-              </h3>
-              <p className="text-propagentic-slate dark:text-propagentic-neutral-light">
-                {steps[activeStep].description}
-              </p>
-              
-              {/* Progress indicators */}
-              <div className="mt-8 flex justify-center space-x-2">
-                {steps.map((_, index) => (
-                  <motion.button
-                    key={index}
-                    onClick={() => handleStepClick(index)}
-                    className={`w-3 h-3 rounded-full focus:outline-none transition-colors duration-200 ${
-                      index === activeStep ? 'bg-propagentic-teal' : 'bg-propagentic-neutral dark:bg-propagentic-neutral-medium'
-                    }`}
-                    whileHover={{ scale: 1.5 }}
-                    animate={index === activeStep ? { scale: [1, 1.2, 1] } : {}}
-                    transition={{ duration: 0.5, repeat: isPlaying ? Infinity : 0 }}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </UIComponentErrorBoundary>
+  );
+};
+
+const FeatureCard = ({ feature }) => {
+  return (
+    <UIComponentErrorBoundary componentName={`AI Feature: ${feature.title}`}>
+      <SafeMotion.div
+        className="relative bg-white dark:bg-propagentic-slate-dark rounded-xl shadow-lg overflow-hidden group"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        viewport={{ once: true, margin: "-100px" }}
+      >
+        <div className="p-6">
+          <div className="flex items-center mb-4">
+            <div className="p-2 rounded-lg bg-propagentic-teal/10 text-propagentic-teal mr-4 group-hover:bg-propagentic-teal group-hover:text-white transition-colors duration-300 relative z-10">
+              {feature.icon}
+            </div>
+            <h3 className="text-xl font-semibold text-propagentic-slate-dark dark:text-white group-hover:text-propagentic-teal transition-colors duration-300">
+              {feature.title}
+            </h3>
+          </div>
+          <p className="text-gray-600 dark:text-gray-300">{feature.description}</p>
+        </div>
+
+        <SafeMotion.div
+          className="absolute bottom-0 left-0 right-0 h-1 bg-propagentic-teal origin-left"
+          initial={{ scaleX: 0 }}
+          whileInView={{ scaleX: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          viewport={{ once: true }}
+        />
+      </SafeMotion.div>
+    </UIComponentErrorBoundary>
   );
 };
 

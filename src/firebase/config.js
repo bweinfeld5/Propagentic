@@ -1,7 +1,13 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAuth, onAuthStateChanged, connectAuthEmulator } from "firebase/auth";
-import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+import { 
+  getFirestore, 
+  connectFirestoreEmulator, 
+  enableIndexedDbPersistence,
+  CACHE_SIZE_UNLIMITED,
+  enableMultiTabIndexedDbPersistence 
+} from "firebase/firestore";
 import { getStorage, connectStorageEmulator } from "firebase/storage";
 import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 import { getAnalytics, isSupported } from "firebase/analytics";
@@ -29,6 +35,38 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 const functions = getFunctions(app);
+
+// Enable Firestore offline persistence
+const enableOfflineSupport = async () => {
+  try {
+    // Enable multi-tab persistence if possible, fall back to single-tab if not
+    const persistenceSettings = { cacheSizeBytes: CACHE_SIZE_UNLIMITED };
+    
+    try {
+      // Multi-tab persistence is preferred but not supported in all browsers
+      await enableMultiTabIndexedDbPersistence(db, persistenceSettings);
+      console.log("Multi-tab offline persistence enabled");
+    } catch (multiTabError) {
+      // Fall back to single-tab persistence if multi-tab not supported
+      if (multiTabError.code === 'failed-precondition') {
+        // Multiple tabs open, use enableIndexedDbPersistence instead
+        await enableIndexedDbPersistence(db, persistenceSettings);
+        console.log("Single-tab offline persistence enabled");
+      } else if (multiTabError.code === 'unimplemented') {
+        // IndexedDB not supported by browser, local data will be lost on refresh
+        console.warn("Offline persistence is not supported by this browser");
+      } else {
+        console.error("Unexpected error enabling offline persistence:", multiTabError);
+      }
+    }
+  } catch (error) {
+    console.error("Error setting up offline persistence:", error);
+    console.warn("Application will continue but offline support is limited");
+  }
+};
+
+// Initialize offline support
+enableOfflineSupport();
 
 // DEBUG: Monitor auth state changes
 onAuthStateChanged(auth, (user) => {

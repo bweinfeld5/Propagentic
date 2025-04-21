@@ -1,9 +1,28 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import './index.css';
+import './styles/theme.css';
 import App from './App';
+import { ModelContextProvider } from './contexts/ModelContext';
 
 console.log('Starting React application...');
+console.log('React version:', React.version);
+
+// Check for React 19 compatibility issues
+const isReact19 = React.version.startsWith('19');
+if (isReact19) {
+  console.log('Using React 19 - ensuring compatibility with libraries');
+  // Register a global error handler for any framer-motion or other library issues
+  window.__REACT19_COMPAT_MODE = true;
+}
+
+// Global error handler for React rendering errors
+window.addEventListener('error', (event) => {
+  console.error('Global error caught in event listener:', event.error);
+  if (event.error && event.error.message && event.error.message.includes('framer-motion')) {
+    console.error('Framer Motion error detected. This could be a React 19 compatibility issue.');
+  }
+});
 
 // Disable any service workers that might be causing issues
 if ('serviceWorker' in navigator) {
@@ -17,20 +36,42 @@ if ('serviceWorker' in navigator) {
 
 // Render the React application with proper error handling
 try {
-  console.log('Attempting to render React app...');
+  console.log('Attempting to render React app using createRoot...');
   const rootElement = document.getElementById('root');
   
   if (!rootElement) {
     throw new Error('Could not find root element to mount React app');
   }
   
-  ReactDOM.render(
+  // Create a root.
+  const root = createRoot(rootElement);
+  
+  // Initialize ModelContextProvider with configuration from env variables
+  const modelContextConfig = {
+    model: process.env.REACT_APP_DEFAULT_MODEL || 'gpt-3.5-turbo',
+    temperature: process.env.REACT_APP_DEFAULT_TEMPERATURE ? 
+      parseFloat(process.env.REACT_APP_DEFAULT_TEMPERATURE) : 0.3,
+    maxTokens: process.env.REACT_APP_DEFAULT_MAX_TOKENS ? 
+      parseInt(process.env.REACT_APP_DEFAULT_MAX_TOKENS, 10) : 1000,
+    apiKey: process.env.REACT_APP_OPENAI_API_KEY
+  };
+  
+  // Verify that we have an API key
+  if (!modelContextConfig.apiKey) {
+    console.warn('OpenAI API key is not set. AI features will not work properly.');
+  } else {
+    console.log('OpenAI API key is configured. AI features should work properly.');
+  }
+  
+  // Initial render: Render an element to the root.
+  root.render(
     <React.StrictMode>
-      <App />
-    </React.StrictMode>,
-    rootElement
+      <ModelContextProvider initialConfig={modelContextConfig}>
+        <App />
+      </ModelContextProvider>
+    </React.StrictMode>
   );
-  console.log('React app rendered successfully');
+  console.log('React app rendered successfully using createRoot');
 } catch (error) {
   console.error('Fatal error rendering React app:', error);
   

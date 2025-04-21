@@ -4,34 +4,46 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --propagentic-teal: #38B2AC;
-  --propagentic-teal-dark: #2C7A7B;
-}
+@layer base {
+  :root {
+    /* Light Mode Base Variables - Using Hex Codes */
+    --color-background: #FFFFFF; /* white */
+    --color-background-subtle: #F9FAFB; /* neutral-50 */
+    --color-content-base: #1F2937; /* neutral-800 */
+    --color-content-secondary: #4B5563; /* neutral-600 */
+    --color-content-subtle: #6B7280; /* neutral-500 */
+    --color-border: #E5E7EB; /* neutral-200 */
+    /* Add others as needed */
+  }
 
-.bg-propagentic-teal {
-  background-color: var(--propagentic-teal);
-}
+  .dark {
+    /* Dark Mode Variable Overrides - Using Hex Codes */
+    --color-background: #111827; /* neutral-900 */
+    --color-background-subtle: #1F2937; /* neutral-800 */
+    --color-content-base: #F3F4F6; /* neutral-100 */
+    --color-content-secondary: #9CA3AF; /* neutral-400 */
+    --color-content-subtle: #6B7280; /* neutral-500 */
+    --color-border: #374151; /* neutral-700 */
+  }
 
-.text-propagentic-teal {
-  color: var(--propagentic-teal);
-}
+  html {
+    @apply scroll-smooth;
+  }
 
-.hover\:bg-teal-600:hover {
-  background-color: var(--propagentic-teal-dark);
-}
+  body {
+    @apply font-sans antialiased;
+    /* Apply base theme using CSS variables */
+    background-color: var(--color-background);
+    color: var(--color-content-base);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+  }
 
-.hover\:text-teal-500:hover {
-  color: var(--propagentic-teal);
-}
-
-body {
-  margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* Ensure headings inherit base text color */
+  h1, h2, h3, h4, h5, h6 {
+    color: inherit;
+  }
 }
 
 .App {
@@ -39,31 +51,11 @@ body {
 }
 
 .App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  /* Remove or update if this specific component style is still used */
+  /* background-color: #282c34; */ 
+  /* ... other App-header styles ... */
 }
 
-/* TailwindCSS will handle most styling */
-/* Custom global styles can be added here */
-
-/* Smooth scrolling for the entire site */
-html {
-  scroll-behavior: smooth;
-}
-
-/* Animation for hover effects */
 .transition-hover {
-  transition: all 0.2s ease-in-out;
-}
-
-/* Dark mode toggle handling */
-.dark body {
-  background-color: #1A202C;
-  color: #E2E8F0;
+  @apply transition-all duration-200 ease-in-out;
 } 

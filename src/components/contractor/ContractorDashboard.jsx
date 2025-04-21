@@ -3,6 +3,9 @@ import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, arrayUni
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, auth, storage, callFunction } from '../../firebase/config';
 import NotificationPreferences from '../notifications/NotificationPreferences';
+import Button from '../ui/Button';
+import StatusPill from '../ui/StatusPill';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 
 // Constants for validation
 const MAX_PROGRESS_UPDATE_LENGTH = 500;
@@ -428,78 +431,31 @@ const ContractorDashboard = () => {
     }
   };
 
-  const renderTicketStatus = (ticket) => {
-    const statusMap = {
-      pending_acceptance: { color: 'yellow', text: 'Pending Your Acceptance' },
-      accepted: { color: 'blue', text: 'Accepted' },
-      in_progress: { color: 'blue', text: 'In Progress' },
-      completed: { color: 'green', text: 'Completed' },
-      rejected: { color: 'red', text: 'Rejected' }
-    };
-    
-    const status = ticket.status;
-    const style = statusMap[status] || { color: 'gray', text: status?.replace(/_/g, ' ') };
-    
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium 
-        ${style.color === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
-          style.color === 'blue' ? 'bg-blue-100 text-blue-800' :
-          style.color === 'green' ? 'bg-green-100 text-green-800' :
-          style.color === 'red' ? 'bg-red-100 text-red-800' :
-          'bg-gray-100 text-gray-800'}`}
-      >
-        {style.text}
-      </span>
-    );
-  };
-
-  // Render urgency badge
-  const renderUrgencyBadge = (urgency) => {
-    const urgencyMap = {
-      low: { color: 'green', text: 'Low' },
-      normal: { color: 'blue', text: 'Normal' },
-      high: { color: 'red', text: 'High' },
-    };
-    
-    const style = urgencyMap[urgency] || { color: 'blue', text: 'Normal' };
-    
-    return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-        ${style.color === 'green' ? 'bg-green-100 text-green-800' :
-          style.color === 'blue' ? 'bg-blue-100 text-blue-800' :
-          style.color === 'red' ? 'bg-red-100 text-red-800' :
-          'bg-gray-100 text-gray-800'}`}
-      >
-        {style.text}
-      </span>
-    );
-  };
-
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary dark:border-primary-light"></div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Contractor Dashboard</h1>
+    <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      <h1 className="text-2xl font-bold text-content dark:text-content-dark mb-6">Contractor Dashboard</h1>
       
       {affiliatedLandlords.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-lg font-medium text-gray-900 mb-3">Your Network</h2>
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+          <h2 className="text-lg font-medium text-content dark:text-content-dark mb-3">Your Network</h2>
+          <div className="bg-background dark:bg-background-darkSubtle rounded-lg shadow overflow-hidden border border-border dark:border-border-dark">
             <div className="overflow-x-auto">
-              <ul className="divide-y divide-gray-200">
+              <ul className="divide-y divide-border dark:divide-border-dark">
                 {affiliatedLandlords.map(landlord => (
                   <li key={landlord.id} className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{landlord.displayName}</p>
-                      <p className="text-sm text-gray-500">{landlord.email}</p>
+                      <p className="text-sm font-medium text-content dark:text-content-dark">{landlord.displayName}</p>
+                      <p className="text-sm text-content-secondary dark:text-content-darkSecondary">{landlord.email}</p>
                     </div>
-                    <span className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800 mt-2 sm:mt-0">
+                    <span className="inline-flex items-center px-3 py-0.5 rounded-full text-xs font-medium bg-info-subtle text-info dark:bg-info-darkSubtle dark:text-blue-300 mt-2 sm:mt-0">
                       Connected
                     </span>
                   </li>
@@ -511,15 +467,15 @@ const ContractorDashboard = () => {
       )}
       
       {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+        <div className="bg-danger-subtle dark:bg-danger-darkSubtle border-l-4 border-danger p-4 mb-6 rounded-md">
           <div className="flex">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-5 w-5 text-danger dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
+              <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
             </div>
           </div>
         </div>
@@ -527,18 +483,17 @@ const ContractorDashboard = () => {
       
       <div className="mb-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-3 gap-2">
-          <h2 className="text-lg font-medium text-gray-900">Job Assignments</h2>
+          <h2 className="text-lg font-medium text-content dark:text-content-dark">Job Assignments</h2>
           
-          {/* Status filter */}
           <div className="w-full md:w-auto">
-            <label htmlFor="status-filter" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="status-filter" className="block text-sm font-medium text-content-secondary dark:text-content-darkSecondary mb-1">
               Filter by Status:
             </label>
             <select
               id="status-filter"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="block w-full md:w-auto rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              className="block w-full md:w-auto rounded-md border-border dark:border-border-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm bg-background dark:bg-background-dark text-content dark:text-content-dark"
             >
               <option value="all">All Jobs</option>
               <option value="pending_acceptance">Pending Acceptance</option>
@@ -550,33 +505,33 @@ const ContractorDashboard = () => {
         </div>
         
         {tickets.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-6 text-center">
-            <p className="text-gray-500">No active job assignments.</p>
-            <p className="text-sm text-gray-400 mt-2">
+          <div className="bg-background dark:bg-background-darkSubtle rounded-lg shadow border border-border dark:border-border-dark p-6 text-center">
+            <p className="text-content-secondary dark:text-content-darkSecondary">No active job assignments.</p>
+            <p className="text-sm text-content-subtle dark:text-content-darkSubtle mt-2">
               You'll see jobs here when landlords assign maintenance requests to you.
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="bg-background dark:bg-background-darkSubtle rounded-lg shadow overflow-hidden border border-border dark:border-border-dark">
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                  <table className="min-w-full divide-y divide-border dark:divide-border-dark">
+                    <thead className="bg-neutral-50 dark:bg-neutral-800">
                       <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-content-secondary dark:text-content-darkSecondary uppercase tracking-wider">
                           Property
                         </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-content-secondary dark:text-content-darkSecondary uppercase tracking-wider">
                           Issue
                         </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-content-secondary dark:text-content-darkSecondary uppercase tracking-wider">
                           Urgency
                         </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-content-secondary dark:text-content-darkSecondary uppercase tracking-wider">
                           Status
                         </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-content-secondary dark:text-content-darkSecondary uppercase tracking-wider">
                           Date
                         </th>
                         <th scope="col" className="relative px-6 py-3">
@@ -584,56 +539,60 @@ const ContractorDashboard = () => {
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="bg-background dark:bg-background-darkSubtle divide-y divide-border dark:divide-border-dark">
                       {tickets.map((ticket) => (
                         <tr 
                           key={ticket.id} 
-                          className={selectedTicket?.id === ticket.id ? 'bg-blue-50' : 'hover:bg-gray-50'}
+                          className={selectedTicket?.id === ticket.id ? 'bg-primary/5 dark:bg-primary/10' : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50'}
                         >
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{ticket.propertyName || 'Unknown'}</div>
+                            <div className="text-sm text-content dark:text-content-dark">{ticket.propertyName || 'Unknown'}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className="text-sm font-medium text-gray-900 capitalize">
+                              <div className="text-sm font-medium text-content dark:text-content-dark capitalize">
                                 {ticket.issueType?.replace('_', ' ') || 'Unknown'}
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            {renderUrgencyBadge(ticket.urgencyLevel)}
+                            <StatusPill status={ticket.urgencyLevel || 'normal'} />
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            {renderTicketStatus(ticket)}
+                            <StatusPill status={ticket.status || 'unknown'} />
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-content-secondary dark:text-content-darkSecondary">
                             {ticket.updatedAt.toLocaleDateString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             {ticket.status === 'pending_acceptance' ? (
                               <div className="flex space-x-2 justify-end">
-                                <button
+                                <Button
+                                  variant="success" size="xs"
                                   onClick={() => handleAcceptTicket(ticket.id)}
                                   disabled={decisionLoading.accept || decisionLoading.reject}
-                                  className={`text-green-600 hover:text-green-900 ${decisionLoading.accept ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                  className="!px-2 !py-1"
                                 >
                                   {decisionLoading.accept ? 'Accepting...' : 'Accept'}
-                                </button>
-                                <button
+                                </Button>
+                                <Button
+                                  variant="danger" size="xs"
                                   onClick={() => handleRejectTicket(ticket.id)}
                                   disabled={decisionLoading.accept || decisionLoading.reject}
-                                  className={`text-red-600 hover:text-red-900 ${decisionLoading.reject ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                  className="!px-2 !py-1"
                                 >
                                   {decisionLoading.reject ? 'Rejecting...' : 'Reject'}
-                                </button>
+                                </Button>
                               </div>
                             ) : (
-                              <button
-                                className="text-blue-600 hover:text-blue-900"
+                              <Button 
+                                variant="ghost" 
+                                size="xs"
                                 onClick={() => setSelectedTicket(ticket)}
+                                className="text-primary dark:text-primary-light"
                               >
                                 Manage
-                              </button>
+                              </Button>
                             )}
                           </td>
                         </tr>
@@ -642,24 +601,24 @@ const ContractorDashboard = () => {
                   </table>
                 </div>
                 
-                {/* Pagination controls */}
                 {hasMore && (
-                  <div className="px-6 py-4 border-t border-gray-200">
-                    <button 
+                  <div className="px-6 py-4 border-t border-border dark:border-border-dark">
+                    <Button 
+                      variant="outline"
                       onClick={loadMoreTickets}
                       disabled={loadingMore}
-                      className={`w-full sm:w-auto flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${loadingMore ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      size="sm"
                     >
                       {loadingMore ? (
                         <>
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
                           Loading...
                         </>
                       ) : 'Load More'}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -667,41 +626,38 @@ const ContractorDashboard = () => {
             
             <div>
               {selectedTicket ? (
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-background dark:bg-background-darkSubtle rounded-lg shadow p-6 border border-border dark:border-border-dark">
                   <div className="mb-4">
-                    <h3 className="text-lg font-medium text-gray-900">Job Details</h3>
-                    <p className="text-sm text-gray-500">#{selectedTicket.id.substring(0, 8)}</p>
+                    <h3 className="text-lg font-medium text-content dark:text-content-dark">Job Details</h3>
+                    <p className="text-sm text-content-secondary dark:text-content-darkSecondary">#{selectedTicket.id.substring(0, 8)}</p>
                   </div>
                   
                   <div className="space-y-4 mb-6">
                     <div>
-                      <h4 className="text-sm font-medium text-gray-500">Property</h4>
-                      <p className="mt-1 text-gray-900">{selectedTicket.propertyName}</p>
+                      <h4 className="text-sm font-medium text-content-secondary dark:text-content-darkSecondary">Property</h4>
+                      <p className="mt-1 text-content dark:text-content-dark">{selectedTicket.propertyName}</p>
                     </div>
                     
                     <div>
-                      <h4 className="text-sm font-medium text-gray-500">Issue Type</h4>
-                      <p className="mt-1 text-gray-900 capitalize">{selectedTicket.issueType?.replace('_', ' ')}</p>
+                      <h4 className="text-sm font-medium text-content-secondary dark:text-content-darkSecondary">Issue Type</h4>
+                      <p className="mt-1 text-content dark:text-content-dark capitalize">{selectedTicket.issueType?.replace('_', ' ')}</p>
                     </div>
                     
                     <div>
-                      <h4 className="text-sm font-medium text-gray-500">Description</h4>
-                      <p className="mt-1 text-gray-900">{selectedTicket.description}</p>
+                      <h4 className="text-sm font-medium text-content-secondary dark:text-content-darkSecondary">Description</h4>
+                      <p className="mt-1 text-content dark:text-content-dark">{selectedTicket.description}</p>
                     </div>
                     
                     <div>
-                      <h4 className="text-sm font-medium text-gray-500">Urgency</h4>
-                      <p className="mt-1">{renderUrgencyBadge(selectedTicket.urgencyLevel)}</p>
-                    </div>
-                    
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-500">Status</h4>
-                      <p className="mt-1">{renderTicketStatus(selectedTicket)}</p>
+                      <h4 className="text-sm font-medium text-content-secondary dark:text-content-darkSecondary">Status</h4>
+                      <div className="mt-1">
+                        <StatusPill status={selectedTicket.status || 'unknown'} />
+                      </div>
                     </div>
                     
                     {selectedTicket.photos?.length > 0 && (
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500">Photos</h4>
+                        <h4 className="text-sm font-medium text-content-secondary dark:text-content-darkSecondary">Photos</h4>
                         <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
                           {selectedTicket.photos.map((photo, idx) => (
                             <a 
@@ -709,13 +665,16 @@ const ContractorDashboard = () => {
                               href={photo} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="block"
+                              className="block group relative"
                             >
                               <img 
                                 src={photo} 
                                 alt={`Ticket photo ${idx+1}`} 
-                                className="h-24 w-full object-cover rounded-md"
+                                className="h-24 w-full object-cover rounded-md border border-border dark:border-border-dark"
                               />
+                              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-md">
+                                <p className="text-white text-xs font-medium">View</p>
+                              </div>
                             </a>
                           ))}
                         </div>
@@ -723,15 +682,14 @@ const ContractorDashboard = () => {
                     )}
                   </div>
                   
-                  {/* Progress update form */}
                   {(selectedTicket.status === 'accepted' || selectedTicket.status === 'in_progress') && (
-                    <div className="border-t border-gray-200 pt-4">
-                      <h4 className="text-sm font-medium text-gray-900 mb-3">Update Progress</h4>
+                    <div className="border-t border-border dark:border-border-dark pt-4">
+                      <h4 className="text-sm font-medium text-content dark:text-content-dark mb-3">Update Progress</h4>
                       
                       <form onSubmit={handleSubmitProgress}>
                         <div className="space-y-4">
                           <div>
-                            <label htmlFor="progress-update" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="progress-update" className="block text-sm font-medium text-content-secondary dark:text-content-darkSecondary">
                               Progress Update <span className="text-red-500">*</span>
                             </label>
                             <textarea
@@ -748,27 +706,27 @@ const ContractorDashboard = () => {
                               }}
                               rows={3}
                               maxLength={MAX_PROGRESS_UPDATE_LENGTH}
-                              className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${
+                              className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm bg-background dark:bg-background-dark text-content dark:text-content-dark placeholder-neutral-400 dark:placeholder-neutral-500 ${
                                 validationErrors.progressUpdate 
-                                  ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
-                                  : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                                  ? 'border-danger focus:border-danger focus:ring-danger' 
+                                  : 'border-border dark:border-border-dark focus:border-primary focus:ring-primary'
                               }`}
                               placeholder="Describe the work done or in progress..."
                               required
                               disabled={submittingUpdate || uploadingPhotos}
                             ></textarea>
                             <div className="mt-1 flex justify-between">
-                              <p className={`text-xs ${progressUpdate.length > MAX_PROGRESS_UPDATE_LENGTH * 0.8 ? 'text-orange-500' : 'text-gray-500'}`}>
+                              <p className={`text-xs ${progressUpdate.length > MAX_PROGRESS_UPDATE_LENGTH * 0.8 ? 'text-warning dark:text-amber-400' : 'text-content-subtle dark:text-content-darkSubtle'}`}>
                                 {progressUpdate.length}/{MAX_PROGRESS_UPDATE_LENGTH} characters
                               </p>
                               {validationErrors.progressUpdate && (
-                                <p className="text-sm text-red-600">{validationErrors.progressUpdate}</p>
+                                <p className="text-sm text-danger dark:text-red-400">{validationErrors.progressUpdate}</p>
                               )}
                             </div>
                           </div>
                           
                           <div>
-                            <label htmlFor="progress-percent" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="progress-percent" className="block text-sm font-medium text-content-secondary dark:text-content-darkSecondary">
                               Progress Percentage: {progressPercent}%
                             </label>
                             <input
@@ -779,19 +737,19 @@ const ContractorDashboard = () => {
                               step="5"
                               value={progressPercent}
                               onChange={(e) => setProgressPercent(parseInt(e.target.value))}
-                              className="mt-1 block w-full"
+                              className="mt-1 block w-full h-2 bg-neutral-200 dark:bg-neutral-700 rounded-lg appearance-none cursor-pointer range-lg accent-primary dark:accent-primary-light"
                               disabled={submittingUpdate || uploadingPhotos}
                             />
                           </div>
                           
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">
+                            <label className="block text-sm font-medium text-content-secondary dark:text-content-darkSecondary">
                               Add Photos (optional)
                             </label>
-                            <div className="mt-1 flex justify-center px-6 py-4 border-2 border-gray-300 border-dashed rounded-md">
+                            <div className="mt-1 flex justify-center px-6 py-4 border-2 border-border dark:border-border-dark border-dashed rounded-md">
                               <div className="space-y-1 text-center">
                                 <svg
-                                  className="mx-auto h-8 w-8 text-gray-400"
+                                  className="mx-auto h-8 w-8 text-content-subtle dark:text-content-darkSubtle"
                                   stroke="currentColor"
                                   fill="none"
                                   viewBox="0 0 48 48"
@@ -804,10 +762,10 @@ const ContractorDashboard = () => {
                                     strokeLinejoin="round"
                                   />
                                 </svg>
-                                <div className="flex text-sm text-gray-600">
+                                <div className="flex text-sm text-content-subtle dark:text-content-darkSubtle">
                                   <label
                                     htmlFor="progress-photos"
-                                    className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500"
+                                    className="relative cursor-pointer bg-background dark:bg-background-darkSubtle rounded-md font-medium text-primary dark:text-primary-light hover:text-primary-dark dark:hover:text-primary focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 dark:focus-within:ring-offset-background-darkSubtle focus-within:ring-primary"
                                   >
                                     <span>Upload photos</span>
                                     <input
@@ -822,14 +780,12 @@ const ContractorDashboard = () => {
                                     />
                                   </label>
                                 </div>
-                                <p className="text-xs text-gray-500">
-                                  JPG, PNG only, up to 5MB each
-                                </p>
+                                <p className="text-xs text-content-subtle dark:text-content-darkSubtle">JPG, PNG only, up to 5MB each</p>
                               </div>
                             </div>
                             
                             {(validationErrors.fileSize || validationErrors.fileType) && (
-                              <div className="mt-2 text-sm text-red-600">
+                              <div className="mt-2 text-sm text-danger dark:text-red-400">
                                 {validationErrors.fileSize && <p>{validationErrors.fileSize}</p>}
                                 {validationErrors.fileType && <p>{validationErrors.fileType}</p>}
                               </div>
@@ -838,22 +794,18 @@ const ContractorDashboard = () => {
                             {progressPhotoURLs.length > 0 && (
                               <div className="mt-4 grid grid-cols-3 gap-2">
                                 {progressPhotoURLs.map((url, idx) => (
-                                  <div key={idx} className="relative">
-                                    <img
-                                      src={url}
-                                      alt={`Upload ${idx + 1}`}
-                                      className="h-20 w-full object-cover rounded-md"
-                                    />
-                                    <button
+                                  <div key={idx} className="relative group">
+                                    <img src={url} alt={`Upload ${idx + 1}`} className="h-20 w-full object-cover rounded-md border border-border dark:border-border-dark" />
+                                    <Button
                                       type="button"
+                                      variant="danger"
+                                      size="xs"
                                       onClick={() => removePhoto(idx)}
                                       disabled={submittingUpdate || uploadingPhotos}
-                                      className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600 focus:outline-none"
-                                    >
-                                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                      </svg>
-                                    </button>
+                                      className="absolute -top-2 -right-2 !p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                      icon={<XMarkIcon className="h-3 w-3"/>}
+                                      aria-label="Remove photo"
+                                    />
                                   </div>
                                 ))}
                               </div>
@@ -862,46 +814,44 @@ const ContractorDashboard = () => {
                           
                           {uploadingPhotos && (
                             <div className="w-full">
-                              <div className="text-xs font-semibold inline-block text-blue-600 mb-1">
+                              <div className="text-xs font-semibold inline-block text-primary dark:text-primary-light mb-1">
                                 Uploading photos...
                               </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2.5">
-                                <div className="bg-blue-600 h-2.5 rounded-full animate-pulse"></div>
+                              <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2.5">
+                                <div className="bg-primary dark:bg-primary-light h-2.5 rounded-full animate-pulse"></div>
                               </div>
                             </div>
                           )}
                           
                           <div>
-                            <button
+                            <Button
                               type="submit"
+                              variant="primary"
                               disabled={submittingUpdate || uploadingPhotos}
-                              className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                                submittingUpdate || uploadingPhotos 
-                                  ? 'bg-blue-400 cursor-not-allowed' 
-                                  : 'bg-blue-600 hover:bg-blue-700'
-                              }`}
+                              fullWidth
                             >
                               {uploadingPhotos ? 'Uploading Photos...' : 
                                submittingUpdate ? 'Updating...' : 
                                progressPercent === 100 ? 'Mark as Complete' : 'Update Progress'}
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       </form>
                     </div>
                   )}
                   
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={() => setSelectedTicket(null)}
-                    className="mt-6 w-full inline-flex justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    className="mt-6 w-full"
                   >
                     Close Details
-                  </button>
+                  </Button>
                 </div>
               ) : (
-                <div className="bg-white rounded-lg shadow p-6 text-center">
-                  <p className="text-gray-500">Select a job to view details</p>
+                <div className="bg-background dark:bg-background-darkSubtle rounded-lg shadow p-6 border border-border dark:border-border-dark text-center">
+                  <p className="text-content-secondary dark:text-content-darkSecondary">Select a job assignment from the list to view details and update progress.</p>
                 </div>
               )}
             </div>
@@ -909,20 +859,19 @@ const ContractorDashboard = () => {
         )}
       </div>
       
-      {/* Settings/Preferences Section */}
       <div className="mb-8">
         <div className="flex justify-between items-center mb-3">
-          <h2 className="text-lg font-medium text-gray-900">Settings & Preferences</h2>
+          <h2 className="text-lg font-medium text-content dark:text-content-dark">Settings & Preferences</h2>
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md bg-background dark:bg-background-darkSubtle hover:bg-background dark:hover:bg-background-darkSubtle focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary dark:focus:ring-primary-light"
           >
             {showSettings ? 'Hide Settings' : 'Show Settings'}
           </button>
         </div>
         
         {showSettings && (
-          <div className="bg-white rounded-lg shadow">
+          <div className="bg-background dark:bg-background-darkSubtle rounded-lg shadow">
             <NotificationPreferences />
           </div>
         )}
