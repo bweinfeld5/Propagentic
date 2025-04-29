@@ -14,7 +14,8 @@ import {
   DocumentTextIcon,
   BuildingOfficeIcon as OfficeBuildingIcon,
   EnvelopeIcon as MailIcon,
-  UsersIcon
+  UsersIcon,
+  Cog8ToothIcon
 } from '@heroicons/react/24/outline';
 import Button from '../ui/Button';
 
@@ -35,79 +36,90 @@ const SidebarNav = () => {
 
   // Define navigation items based on user type
   const navigation = useMemo(() => {
-    // Get user type from either userType or role field
     const userType = userProfile?.userType || userProfile?.role;
     console.log('SidebarNav - User type/role for navigation:', userType);
     
-    // Common navigation items for all users
-    const commonItems = [
-      { name: 'Profile', href: '/profile', icon: UserCircleIcon },
+    // Common navigation items for all authenticated users (except profile, handled by role)
+    const commonBottomItems = [
       { name: 'Support', href: '/support', icon: QuestionMarkCircleIcon },
-      { name: 'Settings', href: '/settings', icon: CogIcon },
+      { name: 'Settings', href: '/settings', icon: Cog8ToothIcon },
     ];
     
     // Tenant-specific navigation
     if (userType === 'tenant') {
-      return [
-        { name: 'Dashboard', href: '/tenant/dashboard', icon: HomeIcon },
-        { name: 'Maintenance', href: '/maintenance/my-requests', icon: ClipboardCheckIcon },
-        ...commonItems
-      ];
+      return {
+        top: [
+          { name: 'Dashboard', href: '/tenant/dashboard', icon: HomeIcon },
+          { name: 'Maintenance', href: '/maintenance/my-requests', icon: ClipboardCheckIcon },
+          { name: 'Profile', href: '/profile', icon: UserCircleIcon }, 
+        ],
+        bottom: commonBottomItems
+      };
     }
     
     // Landlord-specific navigation
     else if (userType === 'landlord') {
-      return [
-        { name: 'Dashboard', href: '/landlord/dashboard', icon: HomeIcon },
-        { name: 'Properties', href: '/landlord/properties', icon: OfficeBuildingIcon },
-        { name: 'Tenants', href: '/landlord/tenants', icon: UsersIcon },
-        { name: 'Maintenance', href: '/landlord/maintenance', icon: ClipboardCheckIcon },
-        ...commonItems
-      ];
+      return {
+          top: [
+            { name: 'Dashboard', href: '/landlord/dashboard', icon: HomeIcon },
+            { name: 'Properties', href: '/landlord/properties', icon: OfficeBuildingIcon },
+            { name: 'Tenants', href: '/landlord/tenants', icon: UsersIcon },
+            { name: 'Maintenance', href: '/landlord/maintenance', icon: ClipboardCheckIcon },
+            { name: 'Profile', href: '/profile', icon: UserCircleIcon },
+          ],
+          bottom: commonBottomItems
+      };
     }
     
     // Contractor-specific navigation
     else if (userType === 'contractor') {
-      return [
-        { name: 'Dashboard', href: '/contractor/dashboard', icon: HomeIcon },
-        { name: 'Job History', href: '/contractor/history', icon: ClockIcon },
-        { name: 'Profile', href: '/contractor/profile', icon: UserCircleIcon },
-        { name: 'Support', href: '/support', icon: QuestionMarkCircleIcon },
-        { name: 'Settings', href: '/settings', icon: CogIcon },
-      ];
+       return {
+           top: [
+            { name: 'Dashboard', href: '/contractor/dashboard', icon: HomeIcon },
+            { name: 'Job History', href: '/contractor/history', icon: ClockIcon },
+            { name: 'Profile', href: '/contractor/profile', icon: UserCircleIcon },
+           ],
+           bottom: commonBottomItems
+       };
     }
     
-    // Default navigation for other user types or when userType is undefined
-    return [
-      { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
-      ...commonItems
-    ];
+    // Default navigation for unknown/other roles
+    return {
+        top: [
+          { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
+          { name: 'Profile', href: '/profile', icon: UserCircleIcon },
+        ],
+        bottom: commonBottomItems
+    };
   }, [userProfile]);
 
-  // Check if the current path matches the nav item
+  // Check if the current path matches the nav item or is a child route
   const isActive = (path) => {
-    const userRole = userProfile?.userType || userProfile?.role;
-    const dashboardPath = `/${userRole}/dashboard`;
-    
-    if (path === dashboardPath && location.pathname === path) {
-      return true;
+    // Exact match for root dashboard paths or specific pages like /profile, /settings, /support
+    if (location.pathname === path) {
+        return true;
     }
-    return location.pathname.startsWith(path) && path !== dashboardPath;
+    // Handle parent paths like /landlord/ when on /landlord/properties etc.
+    // Exclude matching the root path '/' itself unless it's the exact path.
+    if (path !== '/' && location.pathname.startsWith(path + '/')) {
+        return true;
+    }
+    // Removed the special case for /landlord/dashboard and /landlord/properties
+    
+    return false;
   };
 
   // Get classes for nav item based on active state using NEW theme colors
   const getNavItemClasses = (path) => {
     const baseClasses = "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 relative";
+    const active = isActive(path);
     
-    if (isActive(path)) {
-      // Active: Primary text, subtle primary bg, left border indicator
+    if (active) {
       return `${baseClasses} bg-primary/10 dark:bg-primary/10 text-primary dark:text-primary-light font-semibold`;
     }
-    // Inactive: Subtle content text, hover subtle bg, hover primary text
     return `${baseClasses} text-content-secondary dark:text-content-darkSecondary hover:bg-neutral-100 dark:hover:bg-neutral-700/50 hover:text-primary dark:hover:text-primary-light`;
   };
 
-  // User's display name - show name if available, otherwise email
   const userDisplayName = useMemo(() => {
     if (userProfile?.firstName && userProfile?.lastName) {
       return `${userProfile.firstName} ${userProfile.lastName}`;
@@ -115,30 +127,34 @@ const SidebarNav = () => {
     return userProfile?.email || currentUser?.email || 'User';
   }, [userProfile, currentUser]);
 
-  const renderNavItems = (isMobile = false) => (
+  const renderNavItems = (items, isMobile = false) => (
     <>
-      {navigation.map((item) => (
-        <Link
-          key={item.name}
-          to={item.href}
-          className={getNavItemClasses(item.href)}
-          onClick={isMobile ? () => setIsMobileMenuOpen(false) : undefined}
-        >
-          {/* Active Indicator */} 
-          {isActive(item.href) && (
-             <span className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-md"></span>
-          )}
-          <item.icon className={`mr-3 flex-shrink-0 h-${isMobile ? 6: 5} w-${isMobile ? 6: 5} ${isActive(item.href) ? 'text-primary dark:text-primary-light' : 'text-neutral-400 dark:text-neutral-500 group-hover:text-primary dark:group-hover:text-primary-light'}`} aria-hidden="true" />
-          {item.name}
-        </Link>
-      ))}
+      {items.map((item) => {
+        const active = isActive(item.href);
+        return (
+          <Link
+            key={item.name}
+            to={item.href}
+            className={getNavItemClasses(item.href)}
+            onClick={isMobile ? () => setIsMobileMenuOpen(false) : undefined}
+          >
+            {active && (
+               <span className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-md"></span>
+            )}
+            <item.icon 
+              className={`mr-3 flex-shrink-0 h-${isMobile ? 6: 5} w-${isMobile ? 6: 5} ${active ? 'text-primary dark:text-primary-light' : 'text-neutral-400 dark:text-neutral-500 group-hover:text-primary dark:group-hover:text-primary-light'}`}
+              aria-hidden="true" 
+            />
+            {item.name}
+          </Link>
+        );
+      })}
     </>
   );
 
   const renderLogoutButton = (isMobile = false) => (
     <button
       onClick={handleLogout}
-      // Use ghost variant styling, adjust text color
       className={`w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 
                   text-content-secondary dark:text-content-darkSecondary hover:bg-neutral-100 dark:hover:bg-neutral-700/50 hover:text-danger dark:hover:text-red-400`}
     >
@@ -149,7 +165,7 @@ const SidebarNav = () => {
 
   return (
     <>
-      {/* Mobile menu button - Use theme colors */}
+      {/* Mobile menu button */}
       <div className="md:hidden fixed top-4 left-4 z-20">
         <button
           type="button"
@@ -165,32 +181,26 @@ const SidebarNav = () => {
         </button>
       </div>
 
-      {/* Mobile sidebar - Use theme colors */}
+      {/* Mobile sidebar */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 flex z-40 md:hidden">
-          {/* Overlay - Use theme colors */}
           <div 
             className="fixed inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-
-          {/* Sidebar panel - Use theme colors */}
           <div className="relative flex-1 flex flex-col max-w-xs w-full bg-background dark:bg-background-darkSubtle border-r border-border dark:border-border-dark">
-            {/* Header */} 
             <div className="px-4 pt-5 pb-4 sm:px-6 border-b border-border dark:border-border-dark">
               <h2 className="text-lg font-medium text-content dark:text-content-dark">Propagentic</h2>
             </div>
-            
-            {/* User info */}
             <div className="px-4 py-3 border-b border-border dark:border-border-dark">
               <div className="text-sm font-semibold text-content dark:text-content-dark">{userDisplayName}</div>
               <div className="text-xs text-content-secondary dark:text-content-darkSecondary capitalize">{userProfile?.userType || userProfile?.role || 'User'}</div>
             </div>
-            
-            {/* Navigation */}
             <div className="mt-5 flex-1 h-0 overflow-y-auto">
               <nav className="px-2 space-y-1">
-                {renderNavItems(true)}
+                {renderNavItems(navigation.top, true)}
+                <hr className="my-4 border-border dark:border-border-dark"/>
+                {renderNavItems(navigation.bottom, true)}
                 {renderLogoutButton(true)}
               </nav>
             </div>
@@ -198,27 +208,22 @@ const SidebarNav = () => {
         </div>
       )}
 
-      {/* Desktop sidebar - Use theme colors */}
+      {/* Desktop sidebar */}
       <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
         <div className="flex-1 flex flex-col min-h-0 bg-background-subtle dark:bg-background-dark border-r border-border dark:border-border-dark">
           <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
-            {/* Header */}
             <div className="flex items-center flex-shrink-0 px-4">
               <h2 className="text-xl font-bold text-content dark:text-content-dark">Propagentic</h2>
             </div>
-            
-            {/* User info */}
             <div className="px-4 py-4 mt-2 border-b border-border dark:border-border-dark">
               <div className="text-sm font-semibold text-content dark:text-content-dark">{userDisplayName}</div>
               <div className="text-xs text-content-secondary dark:text-content-darkSecondary capitalize">{userProfile?.userType || userProfile?.role || 'User'}</div>
             </div>
-            
-            {/* Navigation */}
             <nav className="mt-6 flex-1 px-4 space-y-1">
-              {renderNavItems(false)}
+              {renderNavItems(navigation.top, false)}
+              <hr className="my-4 border-border dark:border-border-dark"/>
+              {renderNavItems(navigation.bottom, false)}
             </nav>
-            
-            {/* Logout button */} 
             <div className="px-4 py-4 border-t border-border dark:border-border-dark mt-auto">
               {renderLogoutButton(false)}
             </div>

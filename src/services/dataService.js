@@ -16,10 +16,12 @@ import {
   deleteDoc,
   serverTimestamp,
   onSnapshot,
-  collectionGroup
+  collectionGroup,
+  limit
 } from 'firebase/firestore';
 import * as demoData from '../utils/demoData';
 import { resilientFirestoreOperation } from '../utils/retryUtils';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 /**
  * Data service class with methods that work with both real and demo data
@@ -685,6 +687,224 @@ class DataService {
     };
 
     return await resilientFirestoreOperation(updateTicketOperation);
+  }
+
+  /**
+   * Call the sendPropertyInvite Cloud Function
+   * @param {string} propertyId - The ID of the property to invite to.
+   * @param {string} tenantEmail - The email of the tenant being invited.
+   * @returns {Promise<any>} The result from the cloud function
+   */
+  async sendInvite(propertyId, tenantEmail) {
+    if (this.isDemoMode) {
+      console.log(`Demo mode: Sending invite to ${tenantEmail} for property ${propertyId}`);
+      // Simulate success after a delay
+      return new Promise(resolve => setTimeout(() => resolve({ data: { success: true, message: "Demo invite sent.", inviteId: `demo-${Date.now()}` } }), 500));
+    }
+
+    if (!propertyId || !tenantEmail) {
+        throw new Error("Property ID and Tenant Email are required to send an invitation.");
+    }
+
+    const functions = getFunctions(); // Get functions instance
+    const inviteFunction = httpsCallable(functions, 'sendPropertyInvite');
+
+    try {
+      console.log(`Calling sendPropertyInvite function for ${tenantEmail} to property ${propertyId}`);
+      const result = await inviteFunction({ propertyId, tenantEmail });
+      console.log('sendPropertyInvite function result:', result.data);
+      if (!result.data.success) {
+          throw new Error(result.data.message || 'Failed to send invite.');
+      }
+      return result.data;
+    } catch (error) {
+      console.error('Error calling sendPropertyInvite function:', error);
+      const message = error.message || 'An unknown error occurred while sending the invitation.';
+      throw new Error(message);
+    }
+  }
+
+  /**
+   * Call the acceptPropertyInvite Cloud Function
+   * @param {string} inviteId - The ID of the invitation document
+   * @returns {Promise<any>} The result from the cloud function
+   */
+  async acceptInvite(inviteId) {
+    if (this.isDemoMode) {
+      console.log(`Demo mode: Accepting invite ${inviteId}`);
+      // Simulate success after a delay
+      return new Promise(resolve => setTimeout(() => resolve({ data: { success: true, message: "Demo invite accepted." } }), 500));
+    }
+    
+    const functions = getFunctions(); // Get functions instance
+    const acceptFunction = httpsCallable(functions, 'acceptPropertyInvite');
+    
+    try {
+      console.log(`Calling acceptPropertyInvite function for invite: ${inviteId}`);
+      const result = await acceptFunction({ inviteId });
+      console.log('acceptPropertyInvite function result:', result.data);
+      if (!result.data.success) {
+          throw new Error(result.data.message || 'Failed to accept invite.');
+      }
+      return result.data;
+    } catch (error) {
+      console.error('Error calling acceptPropertyInvite function:', error);
+      // Enhance error message parsing if needed
+      const message = error.message || 'An unknown error occurred while accepting the invitation.';
+      throw new Error(message);
+    }
+  }
+
+  /**
+   * Call the rejectPropertyInvite Cloud Function
+   * @param {string} inviteId - The ID of the invitation document
+   * @returns {Promise<any>} The result from the cloud function
+   */
+  async rejectInvite(inviteId) {
+     if (this.isDemoMode) {
+      console.log(`Demo mode: Rejecting invite ${inviteId}`);
+      return new Promise(resolve => setTimeout(() => resolve({ data: { success: true, message: "Demo invite rejected." } }), 300));
+    }
+    
+    const functions = getFunctions();
+    const rejectFunction = httpsCallable(functions, 'rejectPropertyInvite');
+    
+    try {
+      console.log(`Calling rejectPropertyInvite function for invite: ${inviteId}`);
+      const result = await rejectFunction({ inviteId });
+      console.log('rejectPropertyInvite function result:', result.data);
+       if (!result.data.success) {
+          throw new Error(result.data.message || 'Failed to reject invite.');
+      }
+      return result.data;
+    } catch (error) {
+      console.error('Error calling rejectPropertyInvite function:', error);
+      const message = error.message || 'An unknown error occurred while rejecting the invitation.';
+      throw new Error(message);
+    }
+  }
+
+  // New function to subscribe to properties using multiple fields
+  subscribeToPropertiesMultiField(onData, onError) {
+    if (!this.currentUser) {
+      console.error('subscribeToPropertiesMultiField: No authenticated user');
+      onError(new Error('User not authenticated.'));
+      return () => {}; // Return an empty unsubscribe function
+    }
+    if (this.isDemoMode) {
+       console.log('Using demo data for properties subscription');
+       // Use setTimeout to simulate async loading for demo
+       setTimeout(() => onData(demoData.getDemoPropertiesForLandlord('landlord-001')), 500);
+       return () => {};
+    }
+
+    const userId = this.currentUser.uid;
+    console.log(`Subscribing to properties for landlord: ${userId}`);
+
+    // Clean up previous listener if exists
+    if (propertiesUnsubscribe) {
+      console.log("Unsubscribing from previous properties listener.");
+      propertiesUnsubscribe();
+      propertiesUnsubscribe = null;
+    }
+
+    const possibleFieldNames = ['landlordId', 'ownerId', 'userId', 'createdBy'];
+    let activeListenerFound = false;
+    let combinedUnsubscribes = [];
+
+    // Function to process snapshot and deduplicate
+    let combinedProperties = {};
+    const processSnapshot = (snapshot, fieldName) => {
+        console.log(`Snapshot received for field '${fieldName}', docs: ${snapshot.docs.length}`);
+        let changesMade = false;
+        snapshot.docs.forEach(doc => {
+            // Use doc.id as the key for deduplication
+            if (!combinedProperties[doc.id] || JSON.stringify(combinedProperties[doc.id]) !== JSON.stringify({ id: doc.id, ...doc.data() })) {
+                 combinedProperties[doc.id] = { id: doc.id, ...doc.data() };
+                 changesMade = true;
+            }
+        });
+         // Check for deletions (less common in multi-query but good practice)
+         Object.keys(combinedProperties).forEach(id => {
+            if (!snapshot.docs.some(doc => doc.id === id) && combinedProperties[id]?._sourceField === fieldName) {
+                // If a doc previously found via this field is now gone from this snapshot, remove it
+                // This is imperfect logic for multi-query; a simpler approach might be just always combining results
+                 delete combinedProperties[id];
+                 changesMade = true;
+            }
+         });
+
+        if(changesMade) {
+            onData(Object.values(combinedProperties));
+        }
+    };
+
+    // Try setting up listeners for each field
+    possibleFieldNames.forEach(fieldName => {
+        try {
+            const q = query(
+                collection(db, 'properties'),
+                where(fieldName, '==', userId)
+            );
+
+            const unsubscribe = onSnapshot(q,
+                (snapshot) => {
+                    // Mark that at least one listener is active
+                    activeListenerFound = true;
+                    // Add a temporary field to track which query found this doc (helps with deletion logic, though imperfect)
+                    snapshot.docs.forEach(doc => doc.data()._sourceField = fieldName);
+                    processSnapshot(snapshot, fieldName);
+                },
+                (err) => {
+                    console.error(`Error on property subscription for field '${fieldName}':`, err);
+                    // Don't call onError for individual listener errors if others might work
+                    // onError(new Error(`Failed to subscribe to properties using field ${fieldName}.`));
+                }
+            );
+            combinedUnsubscribes.push(unsubscribe);
+            console.log(`Successfully subscribed using field: ${fieldName}`);
+
+        } catch (error) {
+             console.error(`Failed to create query for field '${fieldName}':`, error);
+        }
+    });
+
+    // If no listeners were set up (e.g., all queries failed immediately)
+    // try a collection group query as a fallback one-time fetch
+    if (combinedUnsubscribes.length === 0) {
+        console.warn("No direct listeners attached, attempting collectionGroup query...");
+        const attemptCollectionGroup = async () => {
+             try {
+                const groupQuery = query(
+                    collectionGroup(db, 'properties'),
+                    where('landlordId', '==', userId), // Adjust field if needed for group query
+                    limit(50) // Add a limit for safety
+                );
+                const groupSnapshot = await getDocs(groupQuery);
+                 console.log(`Collection group query found ${groupSnapshot.docs.length} properties.`);
+                if (groupSnapshot.docs.length > 0) {
+                     onData(groupSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                 } else {
+                     onData([]); // Explicitly send empty array if nothing found
+                 }
+             } catch (groupError) {
+                 console.error('Collection group query failed:', groupError);
+                 onError(new Error('Failed to fetch properties using all available methods.'));
+                 onData([]); // Send empty array on final failure
+             }
+        };
+        attemptCollectionGroup();
+    }
+
+    // Assign the combined unsubscribe function
+    propertiesUnsubscribe = () => {
+        console.log(`Unsubscribing from ${combinedUnsubscribes.length} property listeners.`);
+        combinedUnsubscribes.forEach(unsub => unsub());
+        combinedUnsubscribes = [];
+        propertiesUnsubscribe = null;
+    };
+
+    return propertiesUnsubscribe; // Return the master unsubscribe function
   }
 }
 

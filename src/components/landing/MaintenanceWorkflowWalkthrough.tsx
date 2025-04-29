@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { SafeMotion } from '../shared/SafeMotion';
 
 const MaintenanceWorkflowWalkthrough: React.FC = () => {
   return (
@@ -8,7 +8,7 @@ const MaintenanceWorkflowWalkthrough: React.FC = () => {
       <p className="text-gray-600 mb-6">See how our AI-powered system handles maintenance requests.</p>
       
       <div className="space-y-4">
-        <motion.div 
+        <SafeMotion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -16,9 +16,9 @@ const MaintenanceWorkflowWalkthrough: React.FC = () => {
         >
           <h3 className="font-medium">Step 1: Submit Request</h3>
           <p className="text-sm text-gray-500">Tenant submits maintenance request with details and photos</p>
-        </motion.div>
+        </SafeMotion.div>
         
-        <motion.div 
+        <SafeMotion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
@@ -26,9 +26,9 @@ const MaintenanceWorkflowWalkthrough: React.FC = () => {
         >
           <h3 className="font-medium">Step 2: AI Classification</h3>
           <p className="text-sm text-gray-500">AI analyzes the request to determine category and urgency</p>
-        </motion.div>
+        </SafeMotion.div>
         
-        <motion.div 
+        <SafeMotion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
@@ -36,7 +36,7 @@ const MaintenanceWorkflowWalkthrough: React.FC = () => {
         >
           <h3 className="font-medium">Step 3: Dispatch</h3>
           <p className="text-sm text-gray-500">System matches with appropriate maintenance personnel</p>
-        </motion.div>
+        </SafeMotion.div>
       </div>
     </div>
   );

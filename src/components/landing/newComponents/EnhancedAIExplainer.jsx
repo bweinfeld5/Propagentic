@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { SafeMotion } from '../../shared/SafeMotion';
 import { UIComponentErrorBoundary } from '../../shared/ErrorBoundary';
 

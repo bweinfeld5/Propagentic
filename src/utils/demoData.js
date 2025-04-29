@@ -304,7 +304,7 @@ export const demoUsers = [
     uid: 'landlord-001',
     email: 'benjamin.weinfeld@example.com',
     role: 'landlord',
-    userType: 'landlord',
+  userType: 'landlord',
     firstName: 'Benjamin',
     lastName: 'Weinfeld',
     phone: '123-456-7899',

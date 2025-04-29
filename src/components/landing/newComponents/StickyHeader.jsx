@@ -6,7 +6,7 @@ import Logo from '../../../assets/images/logo.svg';
 import { UIComponentErrorBoundary } from '../../shared/ErrorBoundary';
 import Button from '../../ui/Button';
 
-const StickyHeader = () => {
+const HeaderTabs = () => {
   const { currentUser } = useAuth();
   const [isSticky, setIsSticky] = useState(false);
 
@@ -101,4 +101,4 @@ const NavLink = ({ to, children, isSticky }) => (
   </Link>
 );
 
-export default StickyHeader; 
+export default HeaderTabs; 

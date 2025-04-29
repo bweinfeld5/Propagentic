@@ -99,6 +99,21 @@ module.exports = {
         '84': '21rem',
         '96': '24rem',
       },
+      keyframes: {
+        draw: {
+          '0%': {
+            opacity: 0,
+            strokeDasharray: '0, 1000'
+          },
+          '100%': {
+            opacity: 1, 
+            strokeDasharray: '1000, 0'
+          }
+        }
+      },
+      animation: {
+        draw: 'draw 0.7s ease forwards'
+      }
     },
   },
   plugins: [

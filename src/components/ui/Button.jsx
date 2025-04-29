@@ -75,6 +75,11 @@ const Button = React.forwardRef((
                         disabled:opacity-50 disabled:cursor-not-allowed`,
     'ghost-inverse': `bg-transparent border-transparent text-white hover:bg-white/10 focus-visible:ring-white 
                       disabled:opacity-50 disabled:cursor-not-allowed`,
+    // Tab variants for role selectors
+    'tab-active': `bg-primary text-white border-transparent shadow-sm focus-visible:ring-primary 
+                  disabled:opacity-70 disabled:cursor-not-allowed`,
+    'tab-inactive': `bg-transparent text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700/50 focus-visible:ring-primary 
+                    disabled:opacity-50 disabled:cursor-not-allowed`,
   };
 
   // Icon margin based on position and size
@@ -99,39 +104,54 @@ const Button = React.forwardRef((
     </>
   );
 
-  // Determine the component type
-  // Use 'as' prop first if provided (for custom polymorphic behavior)
-  // Then check for 'to' prop (React Router Link)
-  // Then check for 'href' prop (standard anchor)
-  // Default to 'button'
-  const Component = as || (to ? Link : href ? 'a' : 'button');
+  // Explicit conditional rendering based on props
 
-  // Determine props specific to the component type
-  const componentProps = {
-    className: classes,
-    ref: ref,
-    ...(Component === 'button' && { type: type, onClick: onClick, disabled: disabled }),
-    ...(Component === Link && { to: to }),
-    ...(Component === 'a' && { href: href }),
-    ...props, // Spread remaining props
-  };
-
-  // For links/anchors, ensure disabled state doesn't prevent navigation but applies styles
-  if ((Component === Link || Component === 'a') && disabled) {
-    componentProps['aria-disabled'] = true;
-    // Prevent navigation for disabled links (optional, depending on desired UX)
-    // delete componentProps.to;
-    // delete componentProps.href;
-    // Alternatively, handle click event and preventDefault if disabled
-    componentProps.onClick = (e) => {
-      if (disabled) {
-        e.preventDefault();
-      }
-      onClick?.(e); // Call original onClick if provided
-    };
+  // Render as React Router Link if 'to' prop is provided
+  if (to && !disabled) { // Ensure disabled links aren't rendered as active Links
+    return (
+      <Link to={to} className={classes} ref={ref} {...props}>
+        {content}
+      </Link>
+    );
   }
 
-  return React.createElement(Component, componentProps, content);
+  // Render as standard anchor tag if 'href' prop is provided
+  if (href && !disabled) { // Ensure disabled links aren't rendered as active anchors
+    return (
+      <a href={href} className={classes} ref={ref} {...props}>
+        {content}
+      </a>
+    );
+  }
+  
+  // Handle disabled links/anchors (render as span or button with aria-disabled)
+  // This prevents navigation but keeps the visual style
+  if ((to || href) && disabled) {
+    return (
+      <span
+        className={classes} // Apply disabled styles from variants
+        aria-disabled="true"
+        ref={ref}
+        {...props} // Pass other props like aria-label
+      >
+        {content}
+      </span>
+    );
+  }
+
+  // Render as standard button (default case)
+  return (
+    <button
+      type={type}
+      className={classes}
+      onClick={onClick}
+      disabled={disabled}
+      ref={ref}
+      {...props}
+    >
+      {content}
+    </button>
+  );
 });
 
 export default Button; 

@@ -1,6 +1,6 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import PropTypes from 'prop-types';
+import { SafeMotion } from "../shared/SafeMotion";
 
 /**
  * PageTransition Component
@@ -53,7 +53,7 @@ const PageTransition = ({
   const selectedVariant = variants[transitionType] || variants.fade;
   
   return (
-    <motion.div
+    <SafeMotion.div
       initial="initial"
       animate="animate"
       exit="exit"
@@ -66,7 +66,7 @@ const PageTransition = ({
       className="w-full h-full"
     >
       {children}
-    </motion.div>
+    </SafeMotion.div>
   );
 };
 

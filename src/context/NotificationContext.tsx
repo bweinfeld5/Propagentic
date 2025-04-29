@@ -1,27 +1,32 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { collection, query, where, orderBy, limit, onSnapshot, updateDoc, doc, writeBatch, serverTimestamp } from 'firebase/firestore';
-import { db, auth } from '../firebase/config';
+import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 
-export interface Notification {
+// Define the shape of a notification
+interface Notification {
   id: string;
-  userId: string;
-  type: string;
+  title: string;
   message: string;
-  read: boolean;
-  createdAt: Date | null;
-  entityId?: string;
-  entityType?: string;
+  type: 'info' | 'success' | 'warning' | 'error' | 'property_invite' | 'ticket_update';
+  status: 'read' | 'unread';
+  createdAt: Date; // Or use Firestore Timestamp if directly from Firestore
+  relatedData?: Record<string, any>;
 }
 
+// Define the context type
 interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
-  markAsRead: (notificationId: string) => Promise<void>;
-  markAllAsRead: () => Promise<void>;
+  addNotification: (notification: Omit<Notification, 'id' | 'createdAt' | 'status'>) => void;
+  markAsRead: (id: string) => void;
+  markAllAsRead: () => void;
+  removeNotification: (id: string) => void;
+  isLoading: boolean;
+  error: Error | null;
 }
 
+// Create the context with a default value (or null)
 export const NotificationContext = createContext<NotificationContextType | null>(null);
 
+// Custom hook for easy consumption
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
   if (!context) {
@@ -30,75 +35,72 @@ export const useNotifications = () => {
   return context;
 };
 
-export const NotificationProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
+// Provider component props
+interface NotificationProviderProps {
+  children: ReactNode;
+}
+
+// Provider component implementation (Basic Placeholder)
+export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  
-  useEffect(() => {
-    if (!auth.currentUser) return;
-    
-    const notificationsQuery = query(
-      collection(db, "notifications"),
-      where("userId", "==", auth.currentUser.uid),
-      orderBy("createdAt", "desc"),
-      limit(50)
-    );
-    
-    const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
-      const notificationsList = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || null
-      })) as Notification[];
-      
-      setNotifications(notificationsList);
-      setUnreadCount(notificationsList.filter(n => !n.read).length);
-    });
-    
-    return () => unsubscribe();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  // TODO: Implement actual logic to fetch notifications (e.g., from Firebase)
+  // useEffect(() => {
+  //   setIsLoading(true);
+  //   // Fetch notifications for the current user
+  //   // Example: dataService.subscribeToNotifications(setNotifications, setError);
+  //   setIsLoading(false);
+  //   return () => { /* unsubscribe */ }; 
+  // }, []);
+
+  const addNotification = useCallback((notificationData: Omit<Notification, 'id' | 'createdAt' | 'status'>) => {
+    const newNotification: Notification = {
+      ...notificationData,
+      id: `temp-${Date.now()}-${Math.random()}`,
+      createdAt: new Date(),
+      status: 'unread',
+    };
+    setNotifications(prev => [newNotification, ...prev]);
+    // TODO: Add logic to persist the notification if needed
   }, []);
-  
-  const markAsRead = async (notificationId: string) => {
-    if (!notificationId) return;
-    
-    try {
-      await updateDoc(doc(db, "notifications", notificationId), {
-        read: true,
-        readAt: serverTimestamp()
-      });
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
-    }
+
+  const markAsRead = useCallback((id: string) => {
+    setNotifications(prev => 
+      prev.map(n => (n.id === id ? { ...n, status: 'read' } : n))
+    );
+    // TODO: Update notification status in the backend
+  }, []);
+
+  const markAllAsRead = useCallback(() => {
+    setNotifications(prev => 
+      prev.map(n => ({ ...n, status: 'read' }))
+    );
+    // TODO: Update all notification statuses in the backend
+  }, []);
+
+  const removeNotification = useCallback((id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    // TODO: Delete notification from the backend
+  }, []);
+
+  const unreadCount = notifications.filter(n => n.status === 'unread').length;
+
+  const value = {
+    notifications,
+    unreadCount,
+    addNotification,
+    markAsRead,
+    markAllAsRead,
+    removeNotification,
+    isLoading,
+    error,
   };
-  
-  const markAllAsRead = async () => {
-    try {
-      const batch = writeBatch(db);
-      
-      notifications.forEach(notification => {
-        if (!notification.read) {
-          const notificationRef = doc(db, "notifications", notification.id);
-          batch.update(notificationRef, {
-            read: true,
-            readAt: serverTimestamp()
-          });
-        }
-      });
-      
-      await batch.commit();
-    } catch (error) {
-      console.error("Error marking all notifications as read:", error);
-    }
-  };
-  
+
   return (
-    <NotificationContext.Provider value={{
-      notifications,
-      unreadCount,
-      markAsRead,
-      markAllAsRead
-    }}>
+    <NotificationContext.Provider value={value}>
       {children}
     </NotificationContext.Provider>
   );
-};
+}; 

@@ -2,6 +2,9 @@ import React from 'react';
 import DashboardCard from './DashboardCard';
 import StatsChart from './StatsChart';
 import AnimatedDashboardStats from './AnimatedDashboardStats';
+import Button from '../ui/Button';
+import StatusPill from '../ui/StatusPill';
+import { BuildingOfficeIcon, WrenchScrewdriverIcon, ClockIcon, ExclamationTriangleIcon, PlusCircleIcon, UserPlusIcon, ArrowPathIcon, CogIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 
 const DashboardDemo = () => {
   // Sample data for charts
@@ -11,8 +14,8 @@ const DashboardDemo = () => {
       {
         label: 'Maintenance Requests',
         data: [12, 19, 15, 25, 22, 30],
-        borderColor: 'rgb(10, 179, 172)', // propagentic-teal
-        backgroundColor: 'rgba(10, 179, 172, 0.1)',
+        borderColor: '#14B8A6',
+        backgroundColor: 'rgba(20, 184, 166, 0.1)',
         tension: 0.4,
         fill: true
       }
@@ -25,8 +28,8 @@ const DashboardDemo = () => {
       {
         label: 'Open Requests',
         data: [5, 3, 2, 4, 1, 2],
-        backgroundColor: 'rgba(23, 140, 249, 0.6)', // propagentic-blue
-        borderColor: 'rgb(23, 140, 249)',
+        backgroundColor: 'rgba(139, 92, 246, 0.6)',
+        borderColor: '#8B5CF6',
         borderWidth: 1
       }
     ]
@@ -81,11 +84,19 @@ const DashboardDemo = () => {
     }]
   };
   
+  const mockRequests = [
+    { id: 'MR-1024', issue: 'Leaking kitchen faucet', property: 'Sunset Apartments #304', tenant: 'John Smith', status: 'In Progress', date: '2023-06-10', description: 'Leaking kitchen faucet', location: 'Sunset Apartments #304' },
+    { id: 'MR-1023', issue: 'Heating not working', property: 'Oakwood Terrace #201', tenant: 'Maria Garcia', status: 'New', date: '2023-06-09', description: 'Heating not working', location: 'Oakwood Terrace #201' },
+    { id: 'MR-1022', issue: 'Broken dishwasher', property: 'Lakeside Manor #502', tenant: 'Robert Johnson', status: 'Completed', date: '2023-06-08', description: 'Broken dishwasher', location: 'Lakeside Manor #502' },
+    { id: 'MR-1021', issue: 'Electrical outlet not working', property: 'Maple Heights #105', tenant: 'Sarah Williams', status: 'In Progress', date: '2023-06-07', description: 'Electrical outlet not working', location: 'Maple Heights #105' },
+    { id: 'MR-1020', issue: 'Bathroom ceiling leak', property: 'Sunset Apartments #201', tenant: 'James Wilson', status: 'Urgent', date: '2023-06-06', description: 'Bathroom ceiling leak', location: 'Sunset Apartments #201' },
+  ];
+  
   return (
     <div className="space-y-8">
       {/* Stats Overview Section */}
       <section>
-        <h2 className="text-2xl font-semibold text-propagentic-slate-dark dark:text-white mb-6">
+        <h2 className="text-2xl font-semibold text-content dark:text-content-dark mb-6">
           Overview
         </h2>
         
@@ -194,70 +205,76 @@ const DashboardDemo = () => {
       {/* Recent Requests Section */}
       <section>
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold text-propagentic-slate-dark dark:text-white">
+          <h2 className="text-2xl font-semibold text-content dark:text-content-dark">
             Recent Requests
           </h2>
-          <button className="text-propagentic-teal hover:text-propagentic-teal-dark font-medium flex items-center">
+          <Button variant="ghost" size="sm" icon={<ArrowRightIcon className="w-4 h-4" />} iconPosition="right">
             View All
-            <svg className="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
+          </Button>
         </div>
         
-        <div className="bg-white dark:bg-propagentic-slate-dark rounded-xl shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-propagentic-slate">
+        <div className="bg-background dark:bg-background-darkSubtle rounded-xl shadow overflow-hidden border border-border dark:border-border-dark">
+          <table className="min-w-full divide-y divide-border dark:divide-border-dark">
+            <thead className="bg-neutral-50 dark:bg-neutral-800">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  ID
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Issue
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Property
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Tenant
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Status
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Date
-                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-content-secondary dark:text-content-darkSecondary uppercase tracking-wider">ID</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-content-secondary dark:text-content-darkSecondary uppercase tracking-wider">Issue</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-content-secondary dark:text-content-darkSecondary uppercase tracking-wider">Property</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-content-secondary dark:text-content-darkSecondary uppercase tracking-wider">Tenant</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-content-secondary dark:text-content-darkSecondary uppercase tracking-wider">Status</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-content-secondary dark:text-content-darkSecondary uppercase tracking-wider">Date</th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-propagentic-slate-dark divide-y divide-gray-200 dark:divide-gray-700">
-              {[
-                { id: 'MR-1024', issue: 'Leaking kitchen faucet', property: 'Sunset Apartments #304', tenant: 'John Smith', status: 'In Progress', date: '2023-06-10' },
-                { id: 'MR-1023', issue: 'Heating not working', property: 'Oakwood Terrace #201', tenant: 'Maria Garcia', status: 'New', date: '2023-06-09' },
-                { id: 'MR-1022', issue: 'Broken dishwasher', property: 'Lakeside Manor #502', tenant: 'Robert Johnson', status: 'Completed', date: '2023-06-08' },
-                { id: 'MR-1021', issue: 'Electrical outlet not working', property: 'Maple Heights #105', tenant: 'Sarah Williams', status: 'In Progress', date: '2023-06-07' },
-                { id: 'MR-1020', issue: 'Bathroom ceiling leak', property: 'Sunset Apartments #201', tenant: 'James Wilson', status: 'Urgent', date: '2023-06-06' },
-              ].map((request, index) => (
-                <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-propagentic-slate cursor-pointer">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-propagentic-teal">{request.id}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{request.issue}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{request.property}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{request.tenant}</td>
+            <tbody className="bg-background dark:bg-background-darkSubtle divide-y divide-border dark:divide-border-dark">
+              {mockRequests.map((request, index) => (
+                <tr key={request.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary dark:text-primary-light">{request.id}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-content dark:text-content-dark">{request.issue}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-content dark:text-content-dark">{request.property}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-content dark:text-content-dark">{request.tenant}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                      ${request.status === 'New' ? 'bg-blue-100 text-blue-800' : 
-                        request.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' : 
-                        request.status === 'Completed' ? 'bg-green-100 text-green-800' : 
-                        'bg-red-100 text-red-800'}`}>
-                      {request.status}
-                    </span>
+                    <StatusPill status={request.status} />
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{request.date}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-content-secondary dark:text-content-darkSecondary">{request.date}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </section>
+
+      {/* Maintenance Feed - Apply theme */}
+      <div className="md:col-span-2 bg-background dark:bg-background-darkSubtle p-6 rounded-lg shadow border border-border dark:border-border-dark">
+        <h2 className="text-lg font-semibold text-content dark:text-content-dark mb-4">Maintenance Feed</h2>
+        <div className="space-y-4">
+          {mockRequests.map(req => (
+            <div key={req.id} className="p-4 border border-border dark:border-border-dark rounded-lg bg-background dark:bg-background-dark hover:shadow-md transition-shadow">
+              <div className="flex justify-between items-start mb-2">
+                <p className="text-sm font-medium text-content dark:text-content-dark">{req.description}</p>
+                <StatusPill status={req.status} />
+              </div>
+              <p className="text-xs text-content-secondary dark:text-content-darkSecondary mb-3">{req.location}</p>
+              <div className="flex justify-between items-center text-xs text-content-subtle dark:text-content-darkSubtle">
+                <span>Submitted: {req.date}</span>
+                {/* Use Button component */}
+                <Button variant="ghost" size="xs" className="text-primary dark:text-primary-light">View Details</Button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <Button variant="outline" size="sm" className="mt-4 w-full">View All Requests</Button>
+      </div>
+
+      {/* Quick Actions - Apply theme */}
+      <div className="md:col-span-1 bg-background dark:bg-background-darkSubtle p-6 rounded-lg shadow border border-border dark:border-border-dark">
+        <h2 className="text-lg font-semibold text-content dark:text-content-dark mb-4">Quick Actions</h2>
+        <div className="space-y-3">
+          <Button variant="primary" fullWidth icon={<PlusCircleIcon className="w-5 h-5"/>}>New Maintenance Request</Button>
+          <Button variant="outline" fullWidth icon={<UserPlusIcon className="w-5 h-5"/>}>Add New Tenant</Button>
+          <Button variant="outline" fullWidth icon={<ArrowPathIcon className="w-5 h-5"/>}>Generate Report</Button>
+          <Button variant="ghost" fullWidth className="text-primary dark:text-primary-light" icon={<CogIcon className="w-5 h-5"/>}>Settings</Button>
+        </div>
+      </div>
     </div>
   );
 };

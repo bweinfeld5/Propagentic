@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { SafeMotion } from "../../shared/SafeMotion";
 
 const NewsletterSignup = () => {
   const [email, setEmail] = useState('');
@@ -45,13 +45,13 @@ const NewsletterSignup = () => {
       </p>
       
       {isSubmitted ? (
-        <motion.div
+        <SafeMotion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-propagentic-success bg-opacity-10 text-propagentic-success dark:text-propagentic-success px-4 py-3 rounded-lg mb-6"
         >
           Thank you for subscribing! We'll keep you updated.
-        </motion.div>
+        </SafeMotion.div>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 justify-center mb-2">
           <input
@@ -66,7 +66,7 @@ const NewsletterSignup = () => {
             } bg-propagentic-neutral-lightest dark:bg-propagentic-neutral-dark text-propagentic-slate-dark dark:text-propagentic-neutral-lightest placeholder-propagentic-neutral-medium`}
             disabled={isSubmitting}
           />
-          <motion.button
+          <SafeMotion.button
             type="submit"
             className="bg-propagentic-teal text-propagentic-neutral-lightest px-6 py-3 rounded-lg font-medium hover:bg-propagentic-teal-dark transition duration-200 disabled:opacity-70 focus:outline-none focus:ring-2 focus:ring-propagentic-teal focus:ring-offset-2 dark:focus:ring-offset-propagentic-slate-dark"
             disabled={isSubmitting}
@@ -83,18 +83,18 @@ const NewsletterSignup = () => {
             ) : (
               'Subscribe'
             )}
-          </motion.button>
+          </SafeMotion.button>
         </form>
       )}
       
       {error && (
-        <motion.p 
+        <SafeMotion.p 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="text-sm text-propagentic-error mt-1 text-left sm:text-center"
         >
           {error}
-        </motion.p>
+        </SafeMotion.p>
       )}
       
       <p className="text-sm text-propagentic-neutral-medium mt-3">

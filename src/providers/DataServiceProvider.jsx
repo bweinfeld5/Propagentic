@@ -11,17 +11,17 @@ import dataService from '../services/dataService';
  */
 const DataServiceProvider = ({ children }) => {
   const { currentUser } = useAuth();
-  const { isDemoMode } = useDemoMode();
+  const { isDemo } = useDemoMode();
   
   // Configure dataService whenever auth or demo mode changes
   useEffect(() => {
     dataService.configure({
-      isDemoMode,
+      isDemoMode: isDemo,
       currentUser
     });
     
-    console.log(`DataServiceProvider: Configured dataService with userID=${currentUser?.uid}, demoMode=${isDemoMode}`);
-  }, [currentUser, isDemoMode]);
+    console.log(`DataServiceProvider: Configured dataService with userID=${currentUser?.uid}, demoMode=${isDemo}`);
+  }, [currentUser, isDemo]);
   
   // This component doesn't render anything additional
   return <>{children}</>;

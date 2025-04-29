@@ -98,7 +98,7 @@
         *   Dark: `dark:bg-primary dark:hover:bg-primary-light ...` (adjust dark mode colors for good contrast/feel)
 
 2.  **Shared Layout/Structure Components (`src/components/shared/`, `src/layouts/`):**
-    *   **Target Files:** `Header.jsx` / `StickyHeader.jsx`, `Sidebar.jsx` (if separate), `DashboardLayout.jsx`, `ErrorBoundary.jsx`, `SafeMotion.jsx` (verify colors aren't hardcoded).
+    *   **Target Files:** `Header.jsx` / `HeaderTabs.jsx`, `Sidebar.jsx` (if separate), `DashboardLayout.jsx`, `ErrorBoundary.jsx`, `SafeMotion.jsx` (verify colors aren't hardcoded).
     *   **Action:** Update background colors, text colors, borders.
 
 3.  **Landing Page Components (`src/components/landing/newComponents/`):**

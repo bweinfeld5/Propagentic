@@ -1,15 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { SafeMotion } from '../../shared/SafeMotion';
+import { SafeMotion, AnimatePresence } from '../../shared/SafeMotion';
 import { UIComponentErrorBoundary } from '../../shared/ErrorBoundary';
 import StatusPill from '../../ui/StatusPill';
 import Button from '../../ui/Button';
-import { AnimatePresence } from 'framer-motion';
+// Import our custom icons
+import { 
+  BuildingIcon, 
+  UnitsIcon, 
+  OccupancyIcon, 
+  RentPaymentIcon, 
+  CalendarIcon, 
+  BriefcaseIcon, 
+  ClipboardCheckIcon, 
+  CurrencyDollarIcon,
+  WrenchIcon,
+  HomeIcon,
+  SettingsIcon,
+  PaymentIcon,
+  PlusIcon
+} from '../../../components/icons/DashboardIcons';
 
-const DashboardPreview = () => {
-  const [activeTab, setActiveTab] = useState('landlord');
+const DashboardPreview = ({ activeTab: initialActiveTab = 'landlord' }) => {
+  const [activeTab, setActiveTab] = useState(initialActiveTab);
   const [activeRequest, setActiveRequest] = useState(null);
   const [showFeatureTooltip, setShowFeatureTooltip] = useState(null);
+  
+  // Update activeTab when the prop changes
+  useEffect(() => {
+    setActiveTab(initialActiveTab);
+  }, [initialActiveTab]);
   
   // Mock data matching the screenshot
   const maintenanceRequests = [
@@ -155,10 +175,10 @@ const DashboardPreview = () => {
                   <>
                     <SidebarLink icon={<WrenchIcon />}>Maintenance</SidebarLink>
                     {activeTab === 'landlord' && <SidebarLink icon={<BuildingIcon />}>Properties</SidebarLink>}
-                    {activeTab === 'tenant' && <SidebarLink icon={<CreditCardIcon />}>Payments</SidebarLink>}
+                    {activeTab === 'tenant' && <SidebarLink icon={<PaymentIcon />}>Payments</SidebarLink>}
                   </>
                 )}
-                <SidebarLink icon={<CogIcon />}>Settings</SidebarLink>
+                <SidebarLink icon={<SettingsIcon />}>Settings</SidebarLink>
               </nav>
             </div>
             
@@ -174,17 +194,17 @@ const DashboardPreview = () => {
                   onMouseLeave={() => setShowFeatureTooltip(null)}
                 >
                   {renderTooltip('statCards')}
-                  <StatCard title="Total Properties" value="3" />
-                  <StatCard title="Total Units" value="44" />
-                  <StatCard title="Occupancy Rate" value="91%" />
+                  <StatCard title="Total Properties" value="4" subValue="2 Multi-family, 2 Single-family" icon={<BuildingIcon className="w-5 h-5" />} />
+                  <StatCard title="Total Units" value="16" subValue="14 Occupied, 2 Vacant" icon={<UnitsIcon className="w-5 h-5" />} />
+                  <StatCard title="Occupancy Rate" value="87.5%" subValue="↑ 3.2% from last month" icon={<OccupancyIcon className="w-5 h-5" />} />
                 </div>
               )}
               
               {/* Stats for tenant view */}
               {activeTab === 'tenant' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
-                  <StatCard title="Next Rent Due" value="May 1, 2024" subValue="$1,450.00" />
-                  <StatCard title="Lease Ends" value="Oct 31, 2024" subValue="180 days remaining" />
+                  <StatCard title="Next Rent Payment" value="$1,250" subValue="Due in 7 days" icon={<RentPaymentIcon className="w-5 h-5" />} />
+                  <StatCard title="Lease End Date" value="Sep 30, 2023" subValue="Renewal discussion in 60 days" icon={<CalendarIcon className="w-5 h-5" />} />
                 </div>
               )}
               
@@ -196,9 +216,9 @@ const DashboardPreview = () => {
                   onMouseLeave={() => setShowFeatureTooltip(null)}
                 >
                   {renderTooltip('jobStats')}
-                  <StatCard title="Active Jobs" value="2" />
-                  <StatCard title="Completed Jobs" value="24" />
-                  <StatCard title="This Month" value="$3,450" subValue="+12% from last month" />
+                  <StatCard title="Active Jobs" value="3" subValue="2 High priority, 1 Medium priority" icon={<BriefcaseIcon className="w-5 h-5" />} />
+                  <StatCard title="Completed Jobs" value="28" subValue="This month: 7" icon={<ClipboardCheckIcon className="w-5 h-5" />} />
+                  <StatCard title="Earnings" value="$3,850" subValue="↑ $750 from last month" icon={<CurrencyDollarIcon className="w-5 h-5" />} />
                 </div>
               )}
               
@@ -254,7 +274,7 @@ const DashboardPreview = () => {
         </SafeMotion.div>
         
         <div className="mt-10 text-center">
-          <Button to="/demo" size="lg" variant="outline">
+          <Button to="/demo" size="lg" variant="outline" href="/demo">
             Explore Full Interactive Demo
           </Button>
         </div>
@@ -281,32 +301,21 @@ const SidebarLink = ({ icon, children, active = false }) => (
   </a>
 );
 
-// Helper to get an icon based on the StatCard title
-const getStatCardIcon = (title) => {
-  const iconProps = { className: "w-6 h-6 text-propagentic-teal opacity-70" };
-  if (title.includes('Properties')) return <BuildingIcon {...iconProps} />;
-  if (title.includes('Units')) return <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...iconProps}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5" /></svg>; // ServerStackIcon
-  if (title.includes('Occupancy')) return <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...iconProps}><path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m-12 0A5.971 5.971 0 006 18.72m0-3.198a5.968 5.968 0 00-1.07-.281 3 3 0 00-2.874 2.874 6.086 6.086 0 00-1.823.007M3 18.72v-1.027c0-.989.806-1.794 1.794-1.794h4.903c.989 0 1.794.805 1.794 1.794v1.027A5.968 5.968 0 019 18.72m-6 0A5.968 5.968 0 013 15.522m0 0V14.25a2.25 2.25 0 012.25-2.25h3.818c1.11 0 2.09.613 2.58 1.5H18M3 15.522A5.968 5.968 0 003 18.72m18 0v-1.027c0-.989-.806-1.794-1.794-1.794h-4.903c-.989 0-1.794.805-1.794 1.794v1.027A5.968 5.968 0 0115 18.72m-3 0a5.968 5.968 0 01-.75-1.07M15 15.522v-1.271a2.25 2.25 0 00-2.25-2.25H12V7.5m3 8.022H12M12 12.75a.75.75 0 00-.75.75v2.25a.75.75 0 00.75.75h3.75a.75.75 0 000-1.5H12V13.5a.75.75 0 00-.75-.75z" /></svg>; // UsersIcon
-  if (title.includes('Rent Due')) return <CreditCardIcon {...iconProps} />;
-  if (title.includes('Lease Ends')) return <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...iconProps}><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18M9.75 12.75h4.5" /></svg>; // CalendarDaysIcon
-  if (title.includes('Active Jobs')) return <BriefcaseIcon {...iconProps} />;
-  if (title.includes('Completed Jobs')) return <ClipboardCheckIcon {...iconProps} />;
-  if (title.includes('This Month')) return <CurrencyDollarIcon {...iconProps} />;
-  return null;
-}
-
-const StatCard = ({ title, value, subValue }) => (
-  <div className="bg-background dark:bg-background-dark p-5 rounded-xl shadow-md border border-border dark:border-border-dark flex flex-col justify-between min-h-[120px]">
-    <div>
-      <div className="flex justify-between items-center mb-2">
-        <div className="text-sm font-medium text-content-secondary dark:text-content-darkSecondary">{title}</div>
-        {getStatCardIcon(title)}
+// Simplified StatCard component that uses the provided icon directly
+const StatCard = ({ title, value, subValue, icon }) => {
+  return (
+    <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 flex items-start gap-3">
+      <div className="p-2 rounded-lg bg-gray-50 text-gray-600 flex-shrink-0">
+        {icon}
       </div>
-      <div className="text-3xl font-bold text-content dark:text-content-dark">{value}</div>
+      <div>
+        <div className="text-sm text-gray-500 font-medium">{title}</div>
+        <div className="text-xl font-semibold">{value}</div>
+        {subValue && <div className="text-xs text-gray-500 mt-1">{subValue}</div>}
+      </div>
     </div>
-    {subValue && <div className="text-xs text-content-subtle dark:text-content-darkSubtle mt-1 self-start">{subValue}</div>}
-  </div>
-);
+  );
+};
 
 const MaintenanceRequestItem = ({ request, isActive, onClick, activeTab }) => (
   <UIComponentErrorBoundary componentName="Maintenance Request Item">
@@ -438,63 +447,6 @@ const ContractorJobItem = ({ job, isActive, onClick }) => (
       </AnimatePresence>
     </div>
   </UIComponentErrorBoundary>
-);
-
-// Improved Icons with more consistent styling
-const HomeIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-  </svg>
-);
-
-const WrenchIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75a4.5 4.5 0 01-4.884 4.484c-1.076-.091-2.264.071-2.95.904l-7.152 8.684a2.548 2.548 0 11-3.586-3.586l8.684-7.152c.833-.686.995-1.874.904-2.95a4.5 4.5 0 016.336-4.486l-3.276 3.276a3.004 3.004 0 002.25 2.25l3.276-3.276c.256.565.398 1.192.398 1.852z" />
-  </svg>
-);
-
-const BuildingIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
-  </svg>
-);
-
-const CreditCardIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
-  </svg>
-);
-
-const CogIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-  </svg>
-);
-
-// Additional icons
-const PlusIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-  </svg>
-);
-
-const BriefcaseIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z" />
-  </svg>
-);
-
-const ClipboardCheckIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0118 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3l1.5 1.5 3-3.75" />
-  </svg>
-);
-
-const CurrencyDollarIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
 );
 
 export default DashboardPreview; 

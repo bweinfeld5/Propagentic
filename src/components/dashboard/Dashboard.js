@@ -1,5 +1,8 @@
 import React from 'react';
 import { useAuth } from 'context/AuthContext';
+import { Link } from 'react-router-dom';
+import { HomeIcon, UsersIcon, DocumentTextIcon, CogIcon } from '@heroicons/react/24/outline';
+import Button from '../ui/Button';
 
 const Dashboard = () => {
   const { userProfile, isLandlord, isTenant, isContractor } = useAuth();
@@ -164,12 +167,62 @@ const Dashboard = () => {
 
   // Render dashboard based on user role
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Welcome, {userProfile?.email}</h1>
-      
-      {isLandlord() && getLandlordDashboard()}
-      {isTenant() && getTenantDashboard()}
-      {isContractor() && getContractorDashboard()}
+    <div className="p-6 bg-background dark:bg-background-dark">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-content dark:text-content-dark">Dashboard</h1>
+          <p className="mt-1 text-sm text-content-secondary dark:text-content-darkSecondary">
+            Overview of your property management activities.
+          </p>
+        </div>
+        <Button variant="primary" className="mt-4 md:mt-0">
+          Create New Request
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Stats Cards - Use theme colors */}
+        {stats.map((stat) => (
+          <div key={stat.name} className={`p-4 rounded-lg shadow ${stat.color.replace('bg-', 'bg-opacity-20 ')} dark:bg-opacity-30 border border-transparent hover:border-current`}>
+            <p className={`text-sm font-medium ${stat.textColor.replace('-800', '-700')} dark:${stat.textColor.replace('-800', '-300')} truncate`}>{stat.name}</p>
+            <p className={`mt-1 text-3xl font-semibold ${stat.textColor.replace('-800', '-900')} dark:${stat.textColor.replace('-800', '-100')}`}>{stat.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-background dark:bg-background-darkSubtle p-6 rounded-lg shadow border border-border dark:border-border-dark">
+          <h2 className="text-lg font-semibold text-content dark:text-content-dark mb-4">Recent Activity</h2>
+          <ul className="divide-y divide-border dark:divide-border-dark">
+            {recentActivity.map((activity) => (
+              <li key={activity.id} className="py-3 flex justify-between items-center">
+                <div>
+                  <p className="text-sm text-content dark:text-content-dark">
+                    <span className="font-medium">{activity.user}</span> {activity.action}
+                  </p>
+                </div>
+                <span className="text-xs text-content-subtle dark:text-content-darkSubtle">{activity.time}</span>
+              </li>
+            ))}
+          </ul>
+          <Button variant="outline" size="sm" className="mt-4 w-full">View All Activity</Button>
+        </div>
+
+        <div className="bg-background dark:bg-background-darkSubtle p-6 rounded-lg shadow border border-border dark:border-border-dark">
+          <h2 className="text-lg font-semibold text-content dark:text-content-dark mb-4">Quick Links</h2>
+          <nav className="space-y-2">
+            <Link to="/maintenance/new" className="group flex items-center px-3 py-2 text-sm font-medium rounded-md text-content-secondary dark:text-content-darkSecondary hover:bg-neutral-100 dark:hover:bg-neutral-700/50 hover:text-primary dark:hover:text-primary-light">
+              <DocumentTextIcon className="mr-3 h-5 w-5 text-neutral-400 dark:text-neutral-500 group-hover:text-primary dark:group-hover:text-primary-light" /> New Request
+            </Link>
+            <Link to="/tenants" className="group flex items-center px-3 py-2 text-sm font-medium rounded-md text-content-secondary dark:text-content-darkSecondary hover:bg-neutral-100 dark:hover:bg-neutral-700/50 hover:text-primary dark:hover:text-primary-light">
+              <UsersIcon className="mr-3 h-5 w-5 text-neutral-400 dark:text-neutral-500 group-hover:text-primary dark:group-hover:text-primary-light" /> Manage Tenants
+            </Link>
+            <Link to="/settings" className="group flex items-center px-3 py-2 text-sm font-medium rounded-md text-content-secondary dark:text-content-darkSecondary hover:bg-neutral-100 dark:hover:bg-neutral-700/50 hover:text-primary dark:hover:text-primary-light">
+              <CogIcon className="mr-3 h-5 w-5 text-neutral-400 dark:text-neutral-500 group-hover:text-primary dark:group-hover:text-primary-light" /> Settings
+            </Link>
+          </nav>
+        </div>
+      </div>
 
       {/* Fallback if role is not recognized */}
       {!isLandlord() && !isTenant() && !isContractor() && (

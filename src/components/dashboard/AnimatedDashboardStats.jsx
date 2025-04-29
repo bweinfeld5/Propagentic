@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { motion, AnimatePresence } from 'framer-motion';
 import DashboardCard from './DashboardCard';
 import StatsChart from './StatsChart';
+import { SafeMotion, AnimatePresence } from "../shared/SafeMotion";
 
 /**
  * AnimatedDashboardStats Component
@@ -38,11 +38,11 @@ const AnimatedDashboardStats = ({
   // Determine the absolute percentage change for display
   const absPercentageChange = Math.abs(percentageChange || 0);
   
-  // Color classes based on direction
+  // Color classes based on direction - Use theme colors
   const directionColorClass = {
-    up: 'text-propagentic-success',
-    down: 'text-propagentic-error',
-    neutral: 'text-slate-500 dark:text-slate-400'
+    up: 'text-success dark:text-emerald-400', // Use success color
+    down: 'text-danger dark:text-red-400',   // Use danger color
+    neutral: 'text-content-subtle dark:text-content-darkSubtle' // Use subtle content color
   };
   
   // Icon components for each direction
@@ -97,14 +97,14 @@ const AnimatedDashboardStats = ({
     return () => clearInterval(counter);
   }, [value, previousValue, isLoading, animate]);
   
-  // Footer element with percentage change
+  // Footer element with percentage change - Use updated directionColorClass
   const footer = percentageChange !== undefined && (
-    <div className="flex items-center">
+    <div className="flex items-center text-xs">
       <span className={`inline-flex items-center mr-1.5 ${directionColorClass[actualChangeDirection]}`}>
         <DirectionIcon direction={actualChangeDirection} />
-        <span className="ml-1 font-medium">{absPercentageChange}%</span>
+        <span className="ml-1 font-medium">{absPercentageChange.toFixed(1)}%</span>
       </span>
-      <span className="text-slate-500 dark:text-slate-400">{description}</span>
+      <span className="text-content-subtle dark:text-content-darkSubtle">{description}</span>
     </div>
   );
   

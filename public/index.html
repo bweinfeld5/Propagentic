@@ -48,6 +48,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
 
+    <!-- Lottie Web Component Script -->
+    <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.3.0/dist/dotlottie-wc.js" type="module"></script>
+    
     <!-- Handle React Router URL fix for Firebase Hosting -->
     <script type="text/javascript">
       // Single Page Apps for Firebase Hosting
@@ -87,7 +90,7 @@
         
         // Handle Firebase hosting 404 redirects with path format /?/path
         const queryString = window.location.search;
-        const hasRedirectionQuery = queryString.includes('?/');
+        const hasRedirectionQuery = queryString.startsWith('?/') && !isRedirected; // Ensure this doesn't run if redirect_url was just handled
         
         if (hasRedirectionQuery) {
           console.log('Handling Firebase 404 redirect format...');

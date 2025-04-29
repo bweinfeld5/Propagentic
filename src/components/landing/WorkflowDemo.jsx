@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { SafeMotion, AnimatePresence } from '../shared/SafeMotion';
 
 const WorkflowDemo = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -218,7 +218,7 @@ const WorkflowDemo = () => {
       
       {/* Progress bar */}
       <div className="relative h-2 bg-gray-200">
-        <motion.div 
+        <SafeMotion.div 
           className="absolute h-full bg-propagentic-teal"
           initial={{ width: '0%' }}
           animate={{ width: `${(currentStep / 3) * 100}%` }}
@@ -317,7 +317,7 @@ const WorkflowDemo = () => {
           
           {/* Step content */}
           <AnimatePresence mode="wait">
-            <motion.div
+            <SafeMotion.div
               key={currentStep}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -618,7 +618,7 @@ const WorkflowDemo = () => {
                   </div>
                 </div>
               )}
-            </motion.div>
+            </SafeMotion.div>
           </AnimatePresence>
         </div>
       </div>

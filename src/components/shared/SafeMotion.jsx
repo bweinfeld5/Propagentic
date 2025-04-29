@@ -1,72 +1,104 @@
-import React from 'react';
+import React, { createElement, forwardRef } from 'react';
 
 /**
- * SafeMotion - A wrapper for framer-motion components that provides fallbacks
- * in case of compatibility issues with React 19
+ * SafeMotion - A compatibility layer for framer-motion with React 19
+ * Provides fallbacks when framer-motion is not available
  */
 
-// --- Initialize Fallbacks First ---
+// Define types for motion elements
+/**
+ * @typedef {Object} MotionProps
+ * @property {any} [initial]
+ * @property {any} [animate]
+ * @property {any} [exit]
+ * @property {any} [transition]
+ * @property {any} [whileHover]
+ * @property {any} [whileTap]
+ * @property {any} [whileInView]
+ * @property {any} [viewport]
+ * @property {any} [variants]
+ */
 
-// Default fallback components using React.forwardRef
-const createFallbackComponent = (Tag) => React.forwardRef((props, ref) => <Tag ref={ref} {...props} />);
+/**
+ * @typedef {Object} AnimatePresenceProps
+ * @property {React.ReactNode} children
+ * @property {'sync' | 'wait' | 'popLayout'} [mode]
+ * @property {boolean} [initial]
+ * @property {() => void} [onExitComplete]
+ * @property {boolean} [exitBeforeEnter]
+ * @property {boolean} [presenceAffectsLayout]
+ */
 
-// Initial placeholder for motion components
-let motion = {
-  div: createFallbackComponent('div'),
-  span: createFallbackComponent('span'),
-  button: createFallbackComponent('button'),
-  a: createFallbackComponent('a'),
-  p: createFallbackComponent('p'),
-  h1: createFallbackComponent('h1'),
-  h2: createFallbackComponent('h2'),
-  h3: createFallbackComponent('h3'),
-  li: createFallbackComponent('li'),
-  ul: createFallbackComponent('ul'),
-  img: createFallbackComponent('img'),
-  svg: createFallbackComponent('svg'),
-  path: createFallbackComponent('path'),
-  header: createFallbackComponent('header'), // Added header based on usage
-  // Add other common elements as needed
+// Create fallback elements
+const createFallbackElement = (elementType) => {
+  return forwardRef((props, ref) => {
+    // Filter out motion-specific props to prevent warnings
+    const {
+      initial, animate, exit, transition, whileHover, 
+      whileTap, whileInView, viewport, variants,
+      ...restProps
+    } = props;
+    
+    return createElement(elementType, { ...restProps, ref });
+  });
 };
 
-// Initial fallback for AnimatePresence
-let AnimatePresence = ({ children }) => <>{children}</>;
+// Create fallback AnimatePresence component
+const AnimatePresence = forwardRef(({ children, mode }, ref) => <>{children}</>);
 
-// --- Attempt to Load Real Framer Motion ---
+/**
+ * @typedef {Object} SafeMotionType
+ * @property {React.ForwardRefExoticComponent} div
+ * @property {React.ForwardRefExoticComponent} span
+ * @property {React.ForwardRefExoticComponent} img
+ * @property {React.ForwardRefExoticComponent} button
+ * @property {React.ForwardRefExoticComponent} a
+ * @property {React.ForwardRefExoticComponent} ul
+ * @property {React.ForwardRefExoticComponent} li
+ * @property {React.ForwardRefExoticComponent} p
+ * @property {React.ForwardRefExoticComponent} h1
+ * @property {React.ForwardRefExoticComponent} h2
+ * @property {React.ForwardRefExoticComponent} h3
+ * @property {React.ForwardRefExoticComponent} h4
+ * @property {React.ForwardRefExoticComponent} h5
+ * @property {React.ForwardRefExoticComponent} h6
+ * @property {React.ForwardRefExoticComponent} header
+ * @property {React.ForwardRefExoticComponent} footer
+ * @property {React.ForwardRefExoticComponent} nav
+ * @property {React.ForwardRefExoticComponent} form
+ * @property {React.ForwardRefExoticComponent} section
+ * @property {React.ForwardRefExoticComponent} article
+ * @property {React.ForwardRefExoticComponent} aside
+ * @property {React.ForwardRefExoticComponent} main
+ */
 
-try {
-  // Dynamically require framer-motion
-  const framerMotion = require('framer-motion');
-  
-  // If successful, overwrite placeholders with real components
-  if (framerMotion.motion) {
-    motion = framerMotion.motion;
-    console.log('SafeMotion: Using real framer-motion components.');
-  }
+/** @type {SafeMotionType} */
+const SafeMotion = {
+  div: createFallbackElement('div'),
+  span: createFallbackElement('span'),
+  img: createFallbackElement('img'),
+  button: createFallbackElement('button'),
+  a: createFallbackElement('a'),
+  ul: createFallbackElement('ul'),
+  li: createFallbackElement('li'),
+  p: createFallbackElement('p'),
+  h1: createFallbackElement('h1'),
+  h2: createFallbackElement('h2'),
+  h3: createFallbackElement('h3'),
+  h4: createFallbackElement('h4'),
+  h5: createFallbackElement('h5'),
+  h6: createFallbackElement('h6'),
+  header: createFallbackElement('header'),
+  footer: createFallbackElement('footer'),
+  nav: createFallbackElement('nav'),
+  form: createFallbackElement('form'),
+  section: createFallbackElement('section'),
+  article: createFallbackElement('article'),
+  aside: createFallbackElement('aside'),
+  main: createFallbackElement('main')
+};
 
-  if (framerMotion.AnimatePresence) {
-    AnimatePresence = framerMotion.AnimatePresence;
-    console.log('SafeMotion: Using real AnimatePresence.');
-  }
-  
-} catch (err) {
-  console.error('SafeMotion: Failed to load framer-motion, using fallback components:', err);
-}
+export { SafeMotion, AnimatePresence };
 
-// --- Exports ---
-
-// Export the motion object itself (which is either real or fallback) aliased as SafeMotion
-export const SafeMotion = motion; 
-
-// Export AnimatePresence (which is either real or fallback)
-export { AnimatePresence };
-
-// Keep helper for compatibility checks if needed
-export const isFramerMotionCompatible = () => {
-  try {
-    React.createElement(motion.div, { initial: { opacity: 0 } });
-    return true;
-  } catch (error) {
-    return false;
-  }
-}; 
+// Helper function to check if framer-motion is available (always returns false in this fallback)
+export const isFramerMotionAvailable = () => Promise.resolve(false); 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import HeroSection from './HeroSection';
+import HeroSection from './sections/HeroSection';
 import WorkflowDemo from './WorkflowDemo';
 import Logo from '../../assets/images/logo.svg';
 import FeaturesGrid from './FeaturesGrid';

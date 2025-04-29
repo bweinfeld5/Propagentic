@@ -7,7 +7,7 @@ import {
   Marker,
   ZoomableGroup 
 } from 'react-simple-maps';
-import { motion } from 'framer-motion';
+import { SafeMotion } from "../shared/SafeMotion";
 
 // US map coordinates
 const USA_COORDINATES = [-96, 38];
@@ -85,7 +85,7 @@ const PropertyMapVisualization = ({
   
   return (
     <div className={`relative ${className}`}>
-      <motion.div 
+      <SafeMotion.div 
         className="rounded-lg overflow-hidden shadow-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-propagentic-slate-dark"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -126,7 +126,7 @@ const PropertyMapVisualization = ({
                 onMouseLeave={() => handleMarkerHover(property, false)}
                 onClick={() => handlePropertyClick(property)}
               >
-                <motion.circle
+                <SafeMotion.circle
                   r={property.id === activeProperty?.id ? 8 : 5}
                   fill={getMarkerColor(property)}
                   stroke="#fff"
@@ -149,7 +149,7 @@ const PropertyMapVisualization = ({
         
         {/* Tooltip */}
         {tooltipContent && (
-          <motion.div
+          <SafeMotion.div
             className="absolute z-10 bg-white dark:bg-propagentic-slate-dark p-2 rounded shadow-lg border border-gray-200 dark:border-gray-700 text-sm text-gray-800 dark:text-gray-200 max-w-xs"
             style={{
               left: `${tooltipContent.tooltipPosition?.x || '50%'}`,
@@ -173,13 +173,13 @@ const PropertyMapVisualization = ({
                 </span>
               </div>
             )}
-          </motion.div>
+          </SafeMotion.div>
         )}
-      </motion.div>
+      </SafeMotion.div>
       
       {/* Map Controls */}
       <div className="absolute bottom-3 right-3 flex flex-col space-y-2">
-        <motion.button
+        <SafeMotion.button
           className="w-8 h-8 rounded-full bg-white dark:bg-propagentic-slate text-gray-700 dark:text-gray-300 shadow-md flex items-center justify-center focus:outline-none hover:bg-gray-100 dark:hover:bg-propagentic-slate-light"
           onClick={() => setPosition(prev => ({ ...prev, zoom: prev.zoom + 1 }))}
           whileHover={{ scale: 1.1 }}
@@ -188,8 +188,8 @@ const PropertyMapVisualization = ({
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
           </svg>
-        </motion.button>
-        <motion.button
+        </SafeMotion.button>
+        <SafeMotion.button
           className="w-8 h-8 rounded-full bg-white dark:bg-propagentic-slate text-gray-700 dark:text-gray-300 shadow-md flex items-center justify-center focus:outline-none hover:bg-gray-100 dark:hover:bg-propagentic-slate-light"
           onClick={() => setPosition(prev => ({ ...prev, zoom: prev.zoom - 1 }))}
           whileHover={{ scale: 1.1 }}
@@ -199,8 +199,8 @@ const PropertyMapVisualization = ({
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" />
           </svg>
-        </motion.button>
-        <motion.button
+        </SafeMotion.button>
+        <SafeMotion.button
           className="w-8 h-8 rounded-full bg-white dark:bg-propagentic-slate text-gray-700 dark:text-gray-300 shadow-md flex items-center justify-center focus:outline-none hover:bg-gray-100 dark:hover:bg-propagentic-slate-light"
           onClick={() => setPosition({ coordinates: USA_COORDINATES, zoom: DEFAULT_ZOOM })}
           whileHover={{ scale: 1.1 }}
@@ -209,11 +209,11 @@ const PropertyMapVisualization = ({
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>
-        </motion.button>
+        </SafeMotion.button>
       </div>
       
       {/* Properties Legend */}
-      <motion.div 
+      <SafeMotion.div 
         className="absolute top-3 left-3 bg-white/90 dark:bg-propagentic-slate-dark/90 backdrop-blur-sm p-2 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 text-xs text-gray-700 dark:text-gray-300"
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
@@ -238,7 +238,7 @@ const PropertyMapVisualization = ({
             <span>Construction</span>
           </div>
         </div>
-      </motion.div>
+      </SafeMotion.div>
     </div>
   );
 };

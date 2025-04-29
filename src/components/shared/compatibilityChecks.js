@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { SafeMotion } from "../shared/SafeMotion";
 
 /**
  * Check if framer-motion is compatible with the current React version

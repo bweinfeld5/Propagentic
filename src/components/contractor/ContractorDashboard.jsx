@@ -6,6 +6,7 @@ import NotificationPreferences from '../notifications/NotificationPreferences';
 import Button from '../ui/Button';
 import StatusPill from '../ui/StatusPill';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { PhotoIcon } from '@heroicons/react/24/outline';
 
 // Constants for validation
 const MAX_PROGRESS_UPDATE_LENGTH = 500;
@@ -690,14 +691,13 @@ const ContractorDashboard = () => {
                         <div className="space-y-4">
                           <div>
                             <label htmlFor="progress-update" className="block text-sm font-medium text-content-secondary dark:text-content-darkSecondary">
-                              Progress Update <span className="text-red-500">*</span>
+                              Progress Update <span className="text-danger dark:text-red-400">*</span>
                             </label>
                             <textarea
                               id="progress-update"
                               value={progressUpdate}
                               onChange={(e) => {
                                 setProgressUpdate(e.target.value);
-                                // Clear validation error if fixed
                                 if (validationErrors.progressUpdate && e.target.value.trim()) {
                                   const newErrors = {...validationErrors};
                                   delete newErrors.progressUpdate;
@@ -706,11 +706,7 @@ const ContractorDashboard = () => {
                               }}
                               rows={3}
                               maxLength={MAX_PROGRESS_UPDATE_LENGTH}
-                              className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm bg-background dark:bg-background-dark text-content dark:text-content-dark placeholder-neutral-400 dark:placeholder-neutral-500 ${
-                                validationErrors.progressUpdate 
-                                  ? 'border-danger focus:border-danger focus:ring-danger' 
-                                  : 'border-border dark:border-border-dark focus:border-primary focus:ring-primary'
-                              }`}
+                              className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm bg-background dark:bg-background-dark text-content dark:text-content-dark placeholder-neutral-400 dark:placeholder-neutral-500 ${ validationErrors.progressUpdate ? 'border-danger focus:border-danger focus:ring-danger' : 'border-border dark:border-border-dark focus:border-primary focus:ring-primary' }`}
                               placeholder="Describe the work done or in progress..."
                               required
                               disabled={submittingUpdate || uploadingPhotos}
@@ -746,29 +742,16 @@ const ContractorDashboard = () => {
                             <label className="block text-sm font-medium text-content-secondary dark:text-content-darkSecondary">
                               Add Photos (optional)
                             </label>
-                            <div className="mt-1 flex justify-center px-6 py-4 border-2 border-border dark:border-border-dark border-dashed rounded-md">
+                            <div className="mt-1 flex justify-center px-6 py-4 border-2 border-border dark:border-border-dark border-dashed rounded-md bg-background dark:bg-background-darkSubtle hover:border-primary dark:hover:border-primary-light transition-colors">
                               <div className="space-y-1 text-center">
-                                <svg
-                                  className="mx-auto h-8 w-8 text-content-subtle dark:text-content-darkSubtle"
-                                  stroke="currentColor"
-                                  fill="none"
-                                  viewBox="0 0 48 48"
-                                  aria-hidden="true"
-                                >
-                                  <path
-                                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                                    strokeWidth={2}
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  />
-                                </svg>
+                                <PhotoIcon className="mx-auto h-8 w-8 text-content-subtle dark:text-content-darkSubtle" aria-hidden="true" />
                                 <div className="flex text-sm text-content-subtle dark:text-content-darkSubtle">
                                   <label
                                     htmlFor="progress-photos"
                                     className="relative cursor-pointer bg-background dark:bg-background-darkSubtle rounded-md font-medium text-primary dark:text-primary-light hover:text-primary-dark dark:hover:text-primary focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 dark:focus-within:ring-offset-background-darkSubtle focus-within:ring-primary"
                                   >
                                     <span>Upload photos</span>
-                                    <input
+                                    <input 
                                       id="progress-photos"
                                       name="progress-photos"
                                       type="file"
@@ -783,14 +766,16 @@ const ContractorDashboard = () => {
                                 <p className="text-xs text-content-subtle dark:text-content-darkSubtle">JPG, PNG only, up to 5MB each</p>
                               </div>
                             </div>
-                            
-                            {(validationErrors.fileSize || validationErrors.fileType) && (
+                            {validationErrors.fileSize && (
                               <div className="mt-2 text-sm text-danger dark:text-red-400">
-                                {validationErrors.fileSize && <p>{validationErrors.fileSize}</p>}
-                                {validationErrors.fileType && <p>{validationErrors.fileType}</p>}
+                                {validationErrors.fileSize}
                               </div>
                             )}
-                            
+                            {validationErrors.fileType && (
+                              <div className="mt-2 text-sm text-danger dark:text-red-400">
+                                {validationErrors.fileType}
+                              </div>
+                            )}
                             {progressPhotoURLs.length > 0 && (
                               <div className="mt-4 grid grid-cols-3 gap-2">
                                 {progressPhotoURLs.map((url, idx) => (
@@ -830,6 +815,12 @@ const ContractorDashboard = () => {
                               disabled={submittingUpdate || uploadingPhotos}
                               fullWidth
                             >
+                              {(submittingUpdate || uploadingPhotos) && (
+                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                              )}
                               {uploadingPhotos ? 'Uploading Photos...' : 
                                submittingUpdate ? 'Updating...' : 
                                progressPercent === 100 ? 'Mark as Complete' : 'Update Progress'}

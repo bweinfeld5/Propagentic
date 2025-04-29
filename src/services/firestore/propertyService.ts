@@ -126,7 +126,7 @@ export async function removeUnitFromProperty(
     const unitList = propertySnapshot.data().unitList || [];
     
     await updateDoc(propertyRef, {
-      unitList: unitList.filter(unit => unit !== unitNumber)
+      unitList: unitList.filter((unit: string) => unit !== unitNumber)
     });
   }
 }
@@ -167,7 +167,7 @@ export async function removeTenantFromProperty(
     const tenantIds = propertySnapshot.data().tenantIds || [];
     
     await updateDoc(propertyRef, {
-      tenantIds: tenantIds.filter(id => id !== tenantId)
+      tenantIds: tenantIds.filter((id: string) => id !== tenantId)
     });
   }
 }

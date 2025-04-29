@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { SafeMotion, AnimatePresence } from "../../shared/SafeMotion";
 
 const FaqAccordion = ({ questions }) => {
   const [openIndex, setOpenIndex] = useState(null);
@@ -41,7 +41,7 @@ const FaqAccordion = ({ questions }) => {
           
           <AnimatePresence initial={false}>
             {openIndex === index && (
-              <motion.div
+              <SafeMotion.div
                 key="content"
                 initial="collapsed"
                 animate="open"
@@ -55,7 +55,7 @@ const FaqAccordion = ({ questions }) => {
                 <div className="px-6 pb-6 pt-2 text-propagentic-slate dark:text-propagentic-neutral-light">
                   {faq.answer}
                 </div>
-              </motion.div>
+              </SafeMotion.div>
             )}
           </AnimatePresence>
         </div>

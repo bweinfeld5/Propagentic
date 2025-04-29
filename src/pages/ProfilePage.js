@@ -1,275 +1,217 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import HeaderBar from '../components/layout/HeaderBar';
-import SidebarNav from '../components/layout/SidebarNav';
+import Button from '../components/ui/Button';
+import { UserCircleIcon, PencilSquareIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 const ProfilePage = () => {
   const { currentUser, userProfile, fetchUserProfile } = useAuth();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [profileData, setProfileData] = useState(null);
+  const [landlordData, setLandlordData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState({
-    firstName: '',
-    lastName: '',
-    phoneNumber: '',
-    preferredContactMethod: '',
-    address: '',
-    propertyType: '',
-  });
-  const [saveMessage, setSaveMessage] = useState('');
+  const [editFormData, setEditFormData] = useState({});
 
   // Redirect if not logged in
   useEffect(() => {
-    if (!currentUser) {
+    if (!currentUser && !loading) {
       navigate('/login');
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, loading, navigate]);
 
   // Load profile data
   useEffect(() => {
-    if (userProfile) {
-      setProfileData({
-        firstName: userProfile.firstName || '',
-        lastName: userProfile.lastName || '',
-        phoneNumber: userProfile.phoneNumber || '',
-        preferredContactMethod: userProfile.preferredContactMethod || 'email',
-        address: userProfile.address || '',
-        propertyType: userProfile.propertyType || '',
-      });
-    }
-  }, [userProfile]);
+    const loadProfileData = async () => {
+      if (!currentUser) {
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      setError(null);
+      try {
+        const profile = userProfile || await fetchUserProfile(currentUser.uid);
+        if (!profile) {
+          throw new Error("Failed to fetch user profile.");
+        }
+        setProfileData(profile);
 
-  // Handle input changes
-  const handleChange = (e) => {
+        if (profile?.userType === 'landlord' || profile?.role === 'landlord') {
+          const landlordRef = doc(db, 'landlordProfiles', currentUser.uid);
+          const landlordSnap = await getDoc(landlordRef);
+          const currentLandlordData = landlordSnap.exists() ? landlordSnap.data() : {};
+          setLandlordData(currentLandlordData);
+          setEditFormData({ 
+              firstName: profile.firstName || '',
+              lastName: profile.lastName || '',
+              phoneNumber: profile.phoneNumber || '',
+              businessName: currentLandlordData.businessName || '',
+          });
+        } else {
+          setEditFormData({ 
+              firstName: profile.firstName || '',
+              lastName: profile.lastName || '',
+              phoneNumber: profile.phoneNumber || '',
+          });
+        }
+      } catch (err) {
+        console.error("Error loading profile data:", err);
+        setError('Failed to load profile data.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if(currentUser) {
+      loadProfileData();
+    } else {
+      setLoading(false);
+    }
+  }, [currentUser, fetchUserProfile]);
+
+  const handleEditChange = (e) => {
     const { name, value } = e.target;
-    setProfileData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setEditFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Save profile changes
   const handleSave = async () => {
     if (!currentUser) return;
-    
     setLoading(true);
-    setSaveMessage('');
-    
+    setError(null);
     try {
-      const userDocRef = doc(db, 'users', currentUser.uid);
-      
-      await updateDoc(userDocRef, {
-        ...profileData,
+      const userUpdateData = {
+        firstName: editFormData.firstName,
+        lastName: editFormData.lastName,
+        name: `${editFormData.firstName || ''} ${editFormData.lastName || ''}`.trim(),
+        phoneNumber: editFormData.phoneNumber,
         updatedAt: new Date()
-      });
+      };
+      const landlordUpdateData = {
+        businessName: editFormData.businessName,
+        updatedAt: new Date()
+      };
+
+      const userRef = doc(db, 'users', currentUser.uid);
+      await updateDoc(userRef, userUpdateData);
+      console.log('User document updated');
+
+      if (profileData?.userType === 'landlord' || profileData?.role === 'landlord') {
+        const landlordRef = doc(db, 'landlordProfiles', currentUser.uid);
+        await updateDoc(landlordRef, landlordUpdateData).catch(async (updateError) => {
+            console.warn("Failed to update landlord profile, attempting setDoc merge:", updateError);
+            await updateDoc(landlordRef, landlordUpdateData, { merge: true });
+        });
+        console.log('Landlord profile updated/set');
+      }
       
-      // Refresh user profile
       await fetchUserProfile(currentUser.uid);
       
       setIsEditing(false);
-      setSaveMessage('Profile updated successfully!');
-      
-      // Clear message after 3 seconds
-      setTimeout(() => {
-        setSaveMessage('');
-      }, 3000);
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      setSaveMessage('Error updating profile. Please try again.');
+    } catch (err) {
+      console.error("Error saving profile:", err);
+      setError("Failed to save profile changes.");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleCancel = () => {
+    setEditFormData({
+        firstName: profileData?.firstName || '',
+        lastName: profileData?.lastName || '',
+        phoneNumber: profileData?.phoneNumber || '',
+        businessName: landlordData?.businessName || ''
+    });
+    setIsEditing(false);
+  };
+
+  if (loading) {
+    return (
+        <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary dark:border-primary-light"></div>
+        </div>
+    );
+  }
+
+  if (error) {
+    return <div className="bg-danger-subtle p-4 rounded text-danger dark:text-red-400">Error: {error}</div>;
+  }
+
+  if (!profileData) {
+    return <div className="p-6">Could not load user profile data.</div>;
+  }
+
+  // Combine data for display
+  const displayData = {
+      Name: `${profileData.firstName || ''} ${profileData.lastName || ''}`.trim() || profileData.name || '-',
+      Email: profileData.email || '-',
+      Phone: profileData.phoneNumber || '-',
+      Role: profileData.userType || profileData.role || '-',
+      ...( (profileData.userType === 'landlord' || profileData.role === 'landlord') && { 'Business Name': landlordData?.businessName || '-' } ),
+      'Joined': profileData.createdAt?.toDate ? profileData.createdAt.toDate().toLocaleDateString() : 'N/A' 
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <HeaderBar />
-      
-      <div className="flex">
-        <SidebarNav />
-        
-        <main className="flex-1 p-6">
-          <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
-              
-              {!isEditing ? (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+    <div className="max-w-4xl mx-auto bg-background dark:bg-background-darkSubtle rounded-lg shadow-md p-6">
+        <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-semibold text-content dark:text-content-dark flex items-center">
+                <UserCircleIcon className="w-6 h-6 mr-2 text-primary dark:text-primary-light"/>
+                My Profile
+            </h1>
+            {!isEditing && (
+                <Button 
+                    variant="outline"
+                    onClick={() => setIsEditing(true)}
+                    icon={<PencilSquareIcon className="w-5 h-5"/>}
                 >
-                  Edit Profile
-                </button>
-              ) : (
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => setIsEditing(false)}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={loading}
-                    className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
-                  >
-                    {loading ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </div>
-              )}
-            </div>
-            
-            {saveMessage && (
-              <div className={`mb-4 p-3 rounded-md ${saveMessage.includes('Error') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                {saveMessage}
-              </div>
+                    Edit Profile
+                </Button>
             )}
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h2 className="text-lg font-medium text-gray-900 mb-4">Personal Information</h2>
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                      First Name
-                    </label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        id="firstName"
-                        name="firstName"
-                        value={profileData.firstName}
-                        onChange={handleChange}
-                        className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-teal-500 focus:border-teal-500"
-                      />
-                    ) : (
-                      <p className="text-gray-900">{profileData.firstName || 'Not provided'}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                      Last Name
-                    </label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        id="lastName"
-                        name="lastName"
-                        value={profileData.lastName}
-                        onChange={handleChange}
-                        className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-teal-500 focus:border-teal-500"
-                      />
-                    ) : (
-                      <p className="text-gray-900">{profileData.lastName || 'Not provided'}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                      Email
-                    </label>
-                    <p className="text-gray-900">{currentUser?.email}</p>
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="userType" className="block text-sm font-medium text-gray-700 mb-1">
-                      Account Type
-                    </label>
-                    <p className="text-gray-900 capitalize">{userProfile?.userType || 'User'}</p>
-                  </div>
+        </div>
+        
+        {isEditing ? (
+            <div className="space-y-4">
+                <div>
+                    <label className="block text-sm font-medium text-content-secondary dark:text-content-darkSecondary">First Name</label>
+                    <input type="text" name="firstName" value={editFormData.firstName || ''} onChange={handleEditChange} className="mt-1 block w-full rounded-md border-border dark:border-border-dark shadow-sm bg-background-subtle dark:bg-background-dark text-content dark:text-content-dark focus:border-primary focus:ring-primary"/>
                 </div>
-              </div>
-              
-              <div>
-                <h2 className="text-lg font-medium text-gray-900 mb-4">Contact Information</h2>
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                      Phone Number
-                    </label>
-                    {isEditing ? (
-                      <input
-                        type="tel"
-                        id="phoneNumber"
-                        name="phoneNumber"
-                        value={profileData.phoneNumber}
-                        onChange={handleChange}
-                        className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-teal-500 focus:border-teal-500"
-                      />
-                    ) : (
-                      <p className="text-gray-900">{profileData.phoneNumber || 'Not provided'}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="preferredContactMethod" className="block text-sm font-medium text-gray-700 mb-1">
-                      Preferred Contact Method
-                    </label>
-                    {isEditing ? (
-                      <select
-                        id="preferredContactMethod"
-                        name="preferredContactMethod"
-                        value={profileData.preferredContactMethod}
-                        onChange={handleChange}
-                        className="block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-teal-500 focus:border-teal-500"
-                      >
-                        <option value="email">Email</option>
-                        <option value="phone">Phone</option>
-                        <option value="text">Text Message</option>
-                      </select>
-                    ) : (
-                      <p className="text-gray-900 capitalize">{profileData.preferredContactMethod || 'Not provided'}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-                      Address
-                    </label>
-                    {isEditing ? (
-                      <textarea
-                        id="address"
-                        name="address"
-                        rows="3"
-                        value={profileData.address}
-                        onChange={handleChange}
-                        className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-teal-500 focus:border-teal-500"
-                      />
-                    ) : (
-                      <p className="text-gray-900">{profileData.address || 'Not provided'}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="propertyType" className="block text-sm font-medium text-gray-700 mb-1">
-                      Property Type
-                    </label>
-                    {isEditing ? (
-                      <select
-                        id="propertyType"
-                        name="propertyType"
-                        value={profileData.propertyType}
-                        onChange={handleChange}
-                        className="block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-teal-500 focus:border-teal-500"
-                      >
-                        <option value="Apartment">Apartment</option>
-                        <option value="Home">Home</option>
-                        <option value="Commercial Unit">Commercial Unit</option>
-                      </select>
-                    ) : (
-                      <p className="text-gray-900">{profileData.propertyType || 'Not provided'}</p>
-                    )}
-                  </div>
+                <div>
+                    <label className="block text-sm font-medium text-content-secondary dark:text-content-darkSecondary">Last Name</label>
+                    <input type="text" name="lastName" value={editFormData.lastName || ''} onChange={handleEditChange} className="mt-1 block w-full rounded-md border-border dark:border-border-dark shadow-sm bg-background-subtle dark:bg-background-dark text-content dark:text-content-dark focus:border-primary focus:ring-primary"/>
                 </div>
-              </div>
+                <div>
+                    <label className="block text-sm font-medium text-content-secondary dark:text-content-darkSecondary">Phone Number</label>
+                    <input type="tel" name="phoneNumber" value={editFormData.phoneNumber || ''} onChange={handleEditChange} className="mt-1 block w-full rounded-md border-border dark:border-border-dark shadow-sm bg-background-subtle dark:bg-background-dark text-content dark:text-content-dark focus:border-primary focus:ring-primary"/>
+                </div>
+                {(profileData?.userType === 'landlord' || profileData?.role === 'landlord') && (
+                     <div>
+                        <label className="block text-sm font-medium text-content-secondary dark:text-content-darkSecondary">Business Name</label>
+                        <input type="text" name="businessName" value={editFormData.businessName || ''} onChange={handleEditChange} className="mt-1 block w-full rounded-md border-border dark:border-border-dark shadow-sm bg-background-subtle dark:bg-background-dark text-content dark:text-content-dark focus:border-primary focus:ring-primary"/>
+                    </div>
+                )}
+                
+                {error && <p className="text-sm text-danger dark:text-red-400">Save Error: {error}</p>}
+                
+                <div className="flex justify-end space-x-3 pt-4">
+                    <Button variant="outline" onClick={handleCancel} disabled={loading}>Cancel</Button>
+                    <Button variant="primary" onClick={handleSave} isLoading={loading} disabled={loading} icon={<CheckIcon className="w-5 h-5"/>}>
+                       Save Changes
+                    </Button>
+                </div>
             </div>
-          </div>
-        </main>
-      </div>
+        ) : (
+            <dl className="divide-y divide-border dark:divide-border-dark">
+                {Object.entries(displayData).map(([key, value]) => (
+                    <div key={key} className="py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                        <dt className="text-sm font-medium text-content-secondary dark:text-content-darkSecondary">{key}</dt>
+                        <dd className="mt-1 text-sm text-content dark:text-content-dark sm:mt-0 sm:col-span-2">{value || '-'}</dd> 
+                    </div>
+                ))}
+            </dl>
+        )}
     </div>
   );
 };

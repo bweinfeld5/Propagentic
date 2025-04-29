@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import EnhancedHeroSection from './newComponents/EnhancedHeroSection';
 import EnhancedInteractiveDemo from './newComponents/EnhancedInteractiveDemo';
 import StatsSection from './newComponents/StatsSection';
@@ -10,12 +10,48 @@ import NewsletterSection from './newComponents/NewsletterSection';
 import FloatingActionButton from './newComponents/FloatingActionButton';
 import FooterSection from './FooterSection';
 import DashboardPreview from './newComponents/DashboardPreview';
+import RoleProblemSolutionSection from './sections/RoleProblemSolutionSection';
+import { UIComponentErrorBoundary } from '../shared/ErrorBoundary';
+import { shouldUseAnimations, disableAnimations } from '../../helpers/animationHelper';
 
 const EnhancedLandingPage = () => {
+  const [hasError, setHasError] = useState(false);
+  const [useAnimations, setUseAnimations] = useState(shouldUseAnimations);
+  
+  // Handle any animation-related errors
+  const handleAnimationError = () => {
+    console.warn("Animation error detected in landing page");
+    setHasError(true);
+    setUseAnimations(false);
+    disableAnimations();
+  };
+  
+  // Component wrappers with error boundaries
+  const SafeSection = ({ children, name }) => (
+    <UIComponentErrorBoundary 
+      componentName={name} 
+      onError={handleAnimationError}
+      fallback={
+        <div className="py-8 text-center">
+          <p>This section could not be loaded due to a technical issue.</p>
+        </div>
+      }
+    >
+      {children}
+    </UIComponentErrorBoundary>
+  );
+
   return (
     <div className="min-h-screen bg-propagentic-neutral-lightest dark:bg-propagentic-slate-dark">
       {/* Hero section with sticky header */}
-      <EnhancedHeroSection />
+      <SafeSection name="Hero Section">
+        <EnhancedHeroSection useAnimations={useAnimations} />
+      </SafeSection>
+
+      {/* Role Problem Solution Section */}
+      <SafeSection name="Role Problem Solution">
+        <RoleProblemSolutionSection useAnimations={useAnimations} />
+      </SafeSection>
 
       {/* Dashboard Preview Section */}
       <section className="py-16 md:py-24 bg-white dark:bg-propagentic-slate">
@@ -28,11 +64,13 @@ const EnhancedLandingPage = () => {
               Manage your properties, monitor maintenance requests, and track key metrics all in one place.
             </p>
           </div>
-          <DashboardPreview />
+          <SafeSection name="Dashboard Preview">
+            <DashboardPreview useAnimations={useAnimations} />
+          </SafeSection>
         </div>
       </section>
 
-      {/* Interactive Demo Section - Uncommented */}
+      {/* Interactive Demo Section */}
       <section className="py-16 md:py-24 bg-propagentic-neutral-light dark:bg-propagentic-neutral-dark">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
@@ -43,33 +81,56 @@ const EnhancedLandingPage = () => {
               Our interactive demo shows you how Propagentic streamlines maintenance workflows from request to completion.
             </p>
           </div>
-          <EnhancedInteractiveDemo />
+          <SafeSection name="Interactive Demo">
+            <EnhancedInteractiveDemo useAnimations={useAnimations} />
+          </SafeSection>
         </div>
       </section>
       
       {/* Stats section */}
-      <StatsSection />
+      <SafeSection name="Stats Section">
+        <StatsSection useAnimations={useAnimations} />
+      </SafeSection>
       
-      {/* Comparison Table section - Uncommented */}
-      <EnhancedComparisonTable />
+      {/* Comparison Table section */}
+      <SafeSection name="Comparison Table">
+        <EnhancedComparisonTable useAnimations={useAnimations} />
+      </SafeSection>
       
       {/* Enhanced AI Explainer */}
-      <EnhancedAIExplainer />
+      <SafeSection name="AI Explainer">
+        <EnhancedAIExplainer useAnimations={useAnimations} />
+      </SafeSection>
       
       {/* Testimonials */}
-      <EnhancedTestimonials />
+      <SafeSection name="Testimonials">
+        <EnhancedTestimonials useAnimations={useAnimations} />
+      </SafeSection>
       
       {/* FAQ section */}
-      <FaqSection />
+      <SafeSection name="FAQ Section">
+        <FaqSection useAnimations={useAnimations} />
+      </SafeSection>
       
       {/* Newsletter signup */}
-      <NewsletterSection />
+      <SafeSection name="Newsletter Section">
+        <NewsletterSection useAnimations={useAnimations} />
+      </SafeSection>
       
       {/* Footer */}
       <FooterSection />
       
       {/* Floating CTA button */}
-      <FloatingActionButton />
+      <SafeSection name="Action Button">
+        <FloatingActionButton useAnimations={useAnimations} />
+      </SafeSection>
+      
+      {/* Debug indicator for animations */}
+      {hasError && (
+        <div className="fixed bottom-5 left-5 bg-red-100 text-red-700 p-2 rounded text-xs">
+          Animations disabled - Error detected
+        </div>
+      )}
     </div>
   );
 };

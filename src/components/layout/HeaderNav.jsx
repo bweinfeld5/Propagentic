@@ -1,17 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useConnection } from '../../context/ConnectionContext';
-import { UserCircleIcon, WifiIcon, SignalSlashIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { useDemoMode } from '../../context/DemoModeContext';
+import { UserCircleIcon, WifiIcon, SignalSlashIcon, ExclamationTriangleIcon, BellIcon, ArrowLeftOnRectangleIcon } from '@heroicons/react/24/outline';
 import NotificationBell from '../notifications/NotificationBell';
 import NotificationPanel from './NotificationPanel';
 import NotificationErrorBoundary from '../shared/NotificationErrorBoundary';
+import { Link, useNavigate } from 'react-router-dom';
 
 // HeaderNav component with sidebar toggle removed
 const HeaderNav = () => {
   const { userProfile, logout } = useAuth();
   const { isOnline, isFirestoreAvailable, getOfflineStatus, getOfflineDurationText } = useConnection();
+  const { isDemoMode, toggleDemoMode } = useDemoMode();
   const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const connectionStatus = getOfflineStatus();
+  const navigate = useNavigate();
+  const dropdownRef = useRef(null);
+
+  // Close dropdown if clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Get dashboard title based on user type
   const getDashboardTitle = () => {
@@ -30,11 +49,12 @@ const HeaderNav = () => {
   };
 
   const handleLogout = async () => {
+    setIsProfileOpen(false);
     try {
       await logout();
-      // Navigate to login handled by DashboardLayout or App Router
+      navigate('/login');
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error("Logout failed:", error);
     }
   };
 
@@ -72,25 +92,66 @@ const HeaderNav = () => {
       <div className="flex items-center space-x-4">
         {/* Connection status indicator */}
         {getConnectionStatusIndicator()}
+        
+        {/* Demo Mode Toggle */}
+        <button
+          onClick={toggleDemoMode}
+          className={`px-3 py-1 text-xs font-medium rounded-full ${
+            isDemoMode 
+              ? 'bg-blue-500 text-white hover:bg-blue-600' 
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          {isDemoMode ? 'Demo Mode: ON' : 'Demo Mode: OFF'}
+        </button>
 
         <NotificationErrorBoundary>
           <NotificationBell onClick={() => setNotificationPanelOpen(true)} />
         </NotificationErrorBoundary>
 
-        {/* Profile Dropdown Placeholder */}
-        <div className="relative">
-          <button className="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
-            <span className="sr-only">Open user menu</span>
-            {/* Add user avatar image if available, otherwise icon */}
-            <UserCircleIcon className="h-8 w-8 text-slate-500" />
-            <span className="ml-2 hidden md:inline text-sm font-medium text-slate-700">
-              {userProfile?.firstName || userProfile?.email}
-            </span>
-             {/* Dropdown arrow */}
-             <svg className="ml-1 h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-          </button>
+        {/* Profile Dropdown */}
+        <div className="relative ml-3" ref={dropdownRef}>
+          <div>
+            <button
+              type="button"
+              className="bg-white rounded-full flex text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+              id="user-menu-button"
+              aria-expanded={isProfileOpen}
+              aria-haspopup="true"
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+            >
+              <span className="sr-only">Open user menu</span>
+              <UserCircleIcon className="h-8 w-8 rounded-full text-gray-600" />
+            </button>
+          </div>
+
+          {isProfileOpen && (
+            <div
+              className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
+              role="menu"
+              aria-orientation="vertical"
+              aria-labelledby="user-menu-button"
+              tabIndex="-1"
+            >
+              <Link
+                to="/profile"
+                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                role="menuitem"
+                tabIndex="-1"
+                onClick={() => setIsProfileOpen(false)}
+              >
+                <UserCircleIcon className="w-4 h-4 mr-2" /> Your Profile
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                role="menuitem"
+                tabIndex="-1"
+              >
+                <ArrowLeftOnRectangleIcon className="w-4 h-4 mr-2" /> Sign out
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Notification Panel */}

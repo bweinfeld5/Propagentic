@@ -78,6 +78,17 @@ if [ -f "./functions/.env" ]; then
     firebase functions:config:set openai.apikey="$OPENAI_API_KEY"
     
     echo "Environment variables configured successfully!"
+
+    # Set additional environment variables
+    echo "Setting additional environment variables..."
+    firebase functions:config:set email.user="YOUR_GMAIL_USERNAME_OR_APP_PASSWORD_USER"
+    firebase functions:config:set email.password="YOUR_GMAIL_PASSWORD_OR_APP_PASSWORD"
+    firebase functions:config:set twilio.account_sid="YOUR_TWILIO_ACCOUNT_SID"
+    firebase functions:config:set twilio.auth_token="YOUR_TWILIO_AUTH_TOKEN"
+    firebase functions:config:set twilio.phone_number="YOUR_TWILIO_PHONE_NUMBER"
+    firebase functions:config:set app.url="YOUR_APPLICATION_URL"
+    
+    echo "Additional environment variables configured successfully!"
   fi
 fi
 

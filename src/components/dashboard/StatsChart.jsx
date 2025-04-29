@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
-import { motion } from 'framer-motion';
+import { SafeMotion } from "../shared/SafeMotion";
 
 // Register ChartJS components
 ChartJS.register(
@@ -16,6 +16,12 @@ ChartJS.register(
   Legend,
   Filler
 );
+
+// Helper function to get computed CSS variable value
+const getCssVariable = (variable) => {
+  if (typeof window === 'undefined') return ''; // Return empty string for SSR/build
+  return getComputedStyle(document.documentElement).getPropertyValue(variable).trim();
+};
 
 /**
  * StatsChart Component
@@ -43,89 +49,78 @@ const StatsChart = ({
     setChartData(data);
   }, [data, isLoading]);
   
-  // Default options with theming
-  const defaultOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: showLegend,
-        position: 'top',
-        labels: {
+  // Memoize options to use CSS variables
+  const chartOptions = useMemo(() => {
+    // Get computed colors (provide fallbacks for initial render/SSR)
+    const textColorMuted = getCssVariable('--chart-text-muted') || '#6B7280'; // gray-500
+    const textColorBase = getCssVariable('--chart-text-base') || '#374151'; // gray-700
+    const gridColor = getCssVariable('--chart-grid-color') || '#E5E7EB'; // gray-200
+    const tooltipBg = getCssVariable('--chart-tooltip-bg') || '#FFFFFF';
+    const tooltipBorder = getCssVariable('--chart-tooltip-border') || '#E5E7EB';
+    const tooltipTitle = getCssVariable('--chart-tooltip-title') || '#111827';
+    const tooltipBody = getCssVariable('--chart-tooltip-body') || '#374151';
+
+    const defaultOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: showLegend,
+          position: 'top',
+          labels: { color: textColorMuted, usePointStyle: true, boxWidth: 6, font: { size: 12 } }
+        },
+        title: {
+          display: !!title,
+          text: title,
+          color: textColorBase,
+          font: { size: 14, weight: 'normal' }
+        },
+        tooltip: {
+          backgroundColor: tooltipBg,
+          titleColor: tooltipTitle,
+          bodyColor: tooltipBody,
+          borderColor: tooltipBorder,
+          borderWidth: 1,
+          padding: 10,
+          boxPadding: 3,
           usePointStyle: true,
-          boxWidth: 6,
-          font: {
-            size: 12
-          },
-          color: 'rgb(107, 114, 128)' // text-gray-500
+          // Add theme-aware styling to tooltips if needed via external mode
         }
       },
-      title: {
-        display: !!title,
-        text: title,
-        font: {
-          size: 14,
-          weight: 'normal'
+      scales: {
+        x: {
+          grid: { color: `${gridColor}80`, drawBorder: true }, // Add alpha to grid color
+          ticks: { color: textColorMuted, font: { size: 11 } }
         },
-        color: 'rgb(75, 85, 99)' // text-gray-600
-      },
-      tooltip: {
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        titleColor: 'rgb(17, 24, 39)', // text-gray-900
-        bodyColor: 'rgb(55, 65, 81)', // text-gray-700
-        borderColor: 'rgb(229, 231, 235)', // border-gray-200
-        borderWidth: 1,
-        padding: 10,
-        boxPadding: 3,
-        usePointStyle: true,
-        callbacks: {
-          // Optional custom callbacks for tooltips
-        }
-      }
-    },
-    scales: {
-      x: {
-        grid: {
-          display: true,
-          drawBorder: true,
-          drawOnChartArea: true,
-          drawTicks: true,
-          color: 'rgba(229, 231, 235, 0.5)' // border-gray-200 with opacity
-        },
-        ticks: {
-          color: 'rgb(107, 114, 128)', // text-gray-500
-          font: {
-            size: 11
-          }
+        y: {
+          grid: { color: `${gridColor}80`, drawBorder: true }, // Add alpha to grid color
+          ticks: { color: textColorMuted, font: { size: 11 } }
         }
       },
-      y: {
-        grid: {
-          display: true,
-          drawBorder: true,
-          drawOnChartArea: true,
-          drawTicks: true,
-          color: 'rgba(229, 231, 235, 0.5)' // border-gray-200 with opacity
-        },
-        ticks: {
-          color: 'rgb(107, 114, 128)', // text-gray-500
-          font: {
-            size: 11
-          }
-        }
-      }
-    }
-  };
+      // Ensure interaction styles potentially use theme colors if needed
+      interaction: {
+          mode: 'index',
+          intersect: false,
+      },
+    };
+
+    // Deep merge custom options (implementation depends on project utils or simple spread)
+    // For now, simple spread for top-level plugin/scale overrides
+    return { 
+        ...defaultOptions, 
+        ...options, 
+        plugins: {...defaultOptions.plugins, ...options.plugins},
+        scales: {...defaultOptions.scales, ...options.scales}
+    };
+    
+  }, [showLegend, title, options]); // Only recompute when these props change
   
-  // Merge custom options with defaults
-  const mergedOptions = { ...defaultOptions, ...options };
-  
-  // Rendering based on loading state
+  // Loading State - Use theme colors
   if (isLoading) {
     return (
-      <div className={`w-full h-${height / 4} ${className}`}>
-        <div className="w-full h-full flex items-center justify-center bg-slate-50 dark:bg-slate-800/20 rounded-lg animate-pulse">
-          <svg className="w-10 h-10 text-slate-200 dark:text-slate-700" fill="none" viewBox="0 0 24 24">
+      <div className={`w-full ${className}`} style={{ height: `${height}px` }}>
+        <div className="w-full h-full flex items-center justify-center bg-neutral-100 dark:bg-neutral-800/50 rounded-lg animate-pulse">
+          <svg className="w-10 h-10 text-neutral-300 dark:text-neutral-600" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
@@ -134,34 +129,35 @@ const StatsChart = ({
     );
   }
   
-  // Return empty state if no data
+  // No Data State - Use theme colors
   if (!chartData) {
     return (
-      <div className={`w-full h-${height / 4} ${className}`}>
-        <div className="w-full h-full flex items-center justify-center bg-slate-50 dark:bg-slate-800/20 rounded-lg">
-          <p className="text-slate-400 dark:text-slate-600 text-sm">No data available</p>
+      <div className={`w-full ${className}`} style={{ height: `${height}px` }}>
+        <div className="w-full h-full flex items-center justify-center bg-neutral-50 dark:bg-neutral-800/30 rounded-lg">
+          <p className="text-content-subtle dark:text-content-darkSubtle text-sm">No data available</p>
         </div>
       </div>
     );
   }
   
-  // Render the chart with animation wrapper if animate is true
+  // Render Chart
   const chart = type === 'line' ? (
-    <Line data={chartData} options={mergedOptions} height={height} />
+    <Line data={chartData} options={chartOptions} height={height} />
   ) : (
-    <Bar data={chartData} options={mergedOptions} height={height} />
+    <Bar data={chartData} options={chartOptions} height={height} />
   );
   
+  // Optional Animation Wrapper
   if (animate) {
     return (
-      <motion.div
+      <SafeMotion.div
         className={`w-full ${className}`}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
         {chart}
-      </motion.div>
+      </SafeMotion.div>
     );
   }
   

@@ -15,7 +15,7 @@ This document outlines the steps to address the UI inconsistencies and routing i
 
 2.  **Fix Pricing Page Link in Header**
     *   **Goal:** Ensure the 'Pricing' link in the main navigation header on `/propagentic/new` works.
-    *   **Location:** `src/components/landing/newComponents/StickyHeader.jsx` (or relevant header component).
+    *   **Location:** `src/components/landing/newComponents/HeaderTabs.jsx` (or relevant header component).
     *   **Action:** Locate the navigation link for 'Pricing' and confirm its `to` prop is set to `/pricing`.
     *   **Status:** `done`
 
@@ -1534,7 +1534,7 @@ Below are specific code changes needed to address the most critical issues:
 
 ### Fix Pricing Page Navigation
 ```jsx
-// src/components/landing/newComponents/StickyHeader.jsx
+// src/components/landing/newComponents/HeaderTabs.jsx
 // Find the Pricing link and ensure it uses the correct path:
 
 // FROM:
@@ -1546,7 +1546,7 @@ Below are specific code changes needed to address the most critical issues:
 
 ### Fix About Page Navigation
 ```jsx
-// src/components/landing/newComponents/StickyHeader.jsx
+// src/components/landing/newComponents/HeaderTabs.jsx
 // Find the About link and ensure it uses the correct path:
 
 // FROM:
@@ -2500,7 +2500,7 @@ The completed dashboard will feature a rich, interactive experience that showcas
 ## Week 1: Foundation & Navigation Fixes
 
 ### Day 1-2: Navigation & Router Fixes
-- [ ] Fix navigation links in StickyHeader component
+- [ ] Fix navigation links in HeaderTabs component
 - [ ] Verify and update router configuration in App.js
 - [ ] Test all navigation paths across the application
 - [ ] Add proper transitional navigation feedback
@@ -2952,3 +2952,89 @@ To test the current implementation:
 - Error boundaries catch and display user-friendly error messages instead of white screens
 - The application correctly falls back to simpler components when compatibility issues arise
 - All routes work correctly, including direct navigation to deep routes
+
+# Landlord Dashboard MVP - Task List
+
+**Goal:** Achieve a Minimum Viable Product (MVP) for the Landlord Dashboard where landlords can log in, view their properties, add new properties, and invite tenants. Data should be fetched from and saved to Firestore.
+
+**Current Status:**
+*   Authentication and onboarding flow exist.
+*   Landlord login leads to a dashboard view.
+*   **Blocking Issue:** A "Failed to load properties" error is displayed on the landlord dashboard, preventing property data from showing.
+*   Core data services (`dataService.js`, `propertyService.ts`) and Firestore rules are defined but may have integration issues or bugs.
+*   UI components for displaying properties and adding properties exist in mock files (`LandlordDashboard.jsx`) but need to be connected to the live data flow.
+
+**MVP Feature List:**
+1.  Landlord Login & Dashboard Access.
+2.  Display list of landlord's properties fetched from Firestore.
+3.  Display an "empty state" with an "Add Property" prompt if no properties exist.
+4.  Ability to add a new property (basic info: name, address) via a modal/form, saving to Firestore.
+5.  Ability to invite a tenant to a specific property via email (basic Firestore record creation).
+
+---
+
+## Task Breakdown to MVP
+
+**Phase 1: Core Dashboard & Property Loading (Fix Blocking Issues)**
+
+*   `[ ]` **1.1: Verify Dashboard Routing:**
+    *   Confirm the route `/landlord/dashboard` in `src/App.js` correctly maps to the intended primary landlord dashboard component (likely `LandlordTicketDashboard.jsx` needs adaptation or replacement).
+    *   **File(s):** `src/App.js`
+*   `[ ]` **1.2: Debug "Failed to load properties" Error:**
+    *   **File(s):** `src/components/landlord/LandlordTicketDashboard.jsx` (or chosen dashboard), `src/services/dataService.js`, `src/services/firestore/propertyService.ts`, `firestore.rules`
+    *   Trace the data fetching logic starting from the dashboard component mount.
+    *   Verify the `getPropertiesForCurrentLandlord` and `subscribeToProperties` functions in `dataService.js` are correctly querying Firestore (check field names like `landlordId`, `ownerId`). Use Firestore console to confirm data structure.
+    *   Check Firestore security rules (`firestore.rules`) to ensure the logged-in landlord has read permission for the `properties` collection based on their UID.
+    *   Add detailed logging in `dataService.js` and the dashboard component to track the data fetching process and errors.
+    *   Review the `LandlordOnboarding.jsx` process to ensure the `landlordId` is correctly associated with properties created during onboarding.
+    *   Review `CreateLandlordProfile.jsx` to ensure the `landlordProfiles` document is created.
+*   `[ ]` **1.3: Implement Empty State UI:**
+    *   **File(s):** `src/components/landlord/LandlordTicketDashboard.jsx` (or chosen dashboard)
+    *   After attempting to load properties, if the `properties` array is empty and there's no loading error, display a user-friendly message (e.g., "No properties found. Add your first property to get started!").
+    *   Include a prominent "Add Property" button in the empty state.
+
+**Phase 2: Property Management (Add & View)**
+
+*   `[ ]` **2.1: Implement "Add Property" Modal & Logic:**
+    *   **File(s):** Create `src/components/landlord/AddPropertyModal.jsx`, `src/components/landlord/LandlordTicketDashboard.jsx` (or chosen dashboard), `src/services/dataService.js`
+    *   Create or adapt the `AddPropertyModal` component with input fields for essential property details (Name, Street, City, State, Zip).
+    *   Connect the modal's "Save" button to trigger the `dataService.createProperty` function, passing the form data.
+    *   Ensure necessary validation is in place.
+    *   Trigger this modal from the "Add Property" button (from task 1.3 and potentially a persistent button).
+*   `[ ]` **2.2: Display Property List:**
+    *   **File(s):** Create `src/components/landlord/PropertyCard.jsx` or `PropertyList.jsx`, `src/components/landlord/LandlordTicketDashboard.jsx` (or chosen dashboard)
+    *   Create a component (`PropertyCard` or similar) to display basic information for each property fetched from Firestore (Name, Address).
+    *   Use the `properties` state variable (populated in task 1.2) to render a list of these cards/items on the dashboard.
+    *   Ensure the list updates dynamically when a new property is added (verify the real-time subscription from task 1.2 is working or implement a manual refresh).
+
+**Phase 3: Basic Tenant Invitation**
+
+*   `[ ]` **3.1: Implement "Invite Tenant" UI:**
+    *   **File(s):** `src/components/landlord/PropertyCard.jsx` (or list item), Create `src/components/landlord/InviteTenantModal.jsx`
+    *   Add an "Invite Tenant" button to each displayed property item/card.
+    *   Create a simple modal (`InviteTenantModal`) triggered by the button, containing an input field for the tenant's email address.
+*   `[ ]` **3.2: Implement Invite Logic (Firestore Record):**
+    *   **File(s):** `src/components/landlord/InviteTenantModal.jsx`, `src/services/firestore/inviteService.ts` (New or adapt existing service)
+    *   On modal submission:
+        *   Create a new document in a Firestore collection (e.g., `invites`).
+        *   Store `propertyId`, `tenantEmail`, `landlordId`, `status: 'pending'`, and a `createdAt` timestamp.
+        *   **(Optional MVP+):** Trigger a Firebase Function to send an actual email.
+    *   Update the relevant property document in Firestore to potentially link the pending invite or invited tenant's email.
+    *   Provide user feedback (e.g., "Invitation sent").
+
+**Phase 4: Refinement & Cleanup**
+
+*   `[ ]` **4.1: Refactor/Remove Mock Data:**
+    *   **File(s):** `src/pages/landlord/LandlordDashboard.jsx`, potentially others using mock data.
+    *   Remove or comment out any hardcoded mock property/tenant data now that live data is being fetched and displayed.
+*   `[ ]` **4.2: Code Review & Testing:**
+    *   Review implementations for clarity, efficiency, and error handling.
+    *   Perform end-to-end testing:
+        *   Register/Login as Landlord.
+        *   Verify empty state is shown.
+        *   Add a property -> Verify it appears.
+        *   Invite a tenant -> Verify invite record is created in Firestore.
+        *   Log out/in -> Verify property persists.
+    *   Fix any identified bugs.
+
+---

@@ -14,10 +14,10 @@ This document outlines the next set of tasks to refine the UI, fix routing issue
     *   **Status:** `completed`
 
 2.  **Fix Pricing Page Link in Header**
-    *   **Goal:** Re-verify and ensure the 'Pricing' link in the main navigation header (`StickyHeader.jsx`) works correctly.
-    *   **Location:** `src/components/landing/newComponents/StickyHeader.jsx`, `src/App.js`.
+    *   **Goal:** Re-verify and ensure the 'Pricing' link in the main navigation header (`HeaderTabs.jsx`) works correctly.
+    *   **Location:** `src/components/landing/newComponents/HeaderTabs.jsx`, `src/App.js`.
     *   **Action:**
-        *   ✅ Confirmed the `NavLink` component in `StickyHeader.jsx` points exactly to `/pricing`.
+        *   ✅ Confirmed the `NavLink` component in `HeaderTabs.jsx` points exactly to `/pricing`.
         *   ✅ Verified the `/pricing` route definition in `App.js` is correct and renders the `PricingPage`.
         *   ✅ Tested the link click behavior directly.
     *   **Status:** `completed`
@@ -49,7 +49,7 @@ This document outlines the next set of tasks to refine the UI, fix routing issue
         *   ✅ Structured the page with a clean, modern design consistent with the site's aesthetic.
         *   ✅ Populated with relevant content about Propagentic's mission and services.
         *   ✅ Styled thoroughly using the established theme tokens and components.
-        *   ✅ Added link in the `StickyHeader` navigation menu.
+        *   ✅ Added link in the `HeaderTabs` navigation menu.
     *   **Status:** `completed`
 
 6.  **Final Testing**

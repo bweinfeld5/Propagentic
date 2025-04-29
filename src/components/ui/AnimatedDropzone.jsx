@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
-import { SafeDiv, motion, AnimatePresence } from './SafeMotion';
+import { SafeMotion, AnimatePresence } from '../shared/SafeMotion';
 
 /**
  * AnimatedDropzone Component

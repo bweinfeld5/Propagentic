@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { SafeMotion, AnimatePresence } from "../../shared/SafeMotion";
 
 const FloatingActionButton = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -22,7 +22,7 @@ const FloatingActionButton = () => {
   return (
     <AnimatePresence>
       {scrolled && (
-        <motion.div
+        <SafeMotion.div
           className="fixed bottom-8 right-8 z-50"
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -38,7 +38,7 @@ const FloatingActionButton = () => {
               <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
           </Link>
-        </motion.div>
+        </SafeMotion.div>
       )}
     </AnimatePresence>
   );

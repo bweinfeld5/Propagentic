@@ -8,11 +8,15 @@ import {
   query,
   where,
   Timestamp,
-  deleteDoc
+  deleteDoc,
+  onSnapshot,
+  addDoc,
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { Invite } from '../../models/schema';
 import { inviteConverter, createNewInvite } from '../../models/converters';
+import dataService from '../dataService'; // To get current user info
 
 // Define role type inline
 type InviteRole = 'tenant' | 'contractor';
@@ -48,7 +52,7 @@ export async function getLandlordInvites(landlordId: string): Promise<Invite[]> 
  * Get invite by email
  */
 export async function getInviteByEmail(email: string): Promise<Invite | null> {
-  const q = query(invitesCollection, where('email', '==', email), where('status', '==', 'pending'));
+  const q = query(invitesCollection, where('tenantEmail', '==', email), where('status', '==', 'pending'));
   const querySnapshot = await getDocs(q);
   
   if (!querySnapshot.empty) {
@@ -56,6 +60,33 @@ export async function getInviteByEmail(email: string): Promise<Invite | null> {
   }
   
   return null;
+}
+
+/**
+ * Get all *pending* invites for a specific tenant email.
+ * This is what the tenant dashboard will use.
+ */
+export async function getPendingInvitesForTenant(tenantEmail: string): Promise<Invite[]> {
+  if (!tenantEmail) {
+    console.log("getPendingInvitesForTenant: No email provided.");
+    return [];
+  }
+  console.log(`Fetching pending invites for email: ${tenantEmail}`);
+  const q = query(
+    invitesCollection, 
+    where('tenantEmail', '==', tenantEmail), 
+    where('status', '==', 'pending')
+  );
+  
+  try {
+    const querySnapshot = await getDocs(q);
+    const invites = querySnapshot.docs.map(doc => doc.data());
+    console.log(`Found ${invites.length} pending invites for ${tenantEmail}`);
+    return invites;
+  } catch (error) {
+    console.error("Error fetching pending invites for tenant:", error);
+    throw new Error("Failed to fetch pending invitations.");
+  }
 }
 
 /**
@@ -303,4 +334,79 @@ export async function deleteInvite(inviteId: string): Promise<void> {
       }
     }
   }
-} 
+}
+
+interface InviteData {
+    propertyId: string;
+    tenantEmail: string;
+    propertyName?: string; // Optional but good for notifications
+    landlordName?: string; // Optional but good for notifications
+}
+
+const inviteService = {
+    /**
+     * Creates an invitation record in Firestore.
+     * This triggers the createNotificationOnInvite cloud function.
+     * @param inviteDetails - Object containing propertyId and tenantEmail.
+     */
+    async createInvite({ propertyId, tenantEmail, propertyName = 'a property', landlordName = 'Your Landlord' }: InviteData): Promise<string> {
+        const currentUser = dataService.currentUser; // Get user from configured dataService
+        if (!currentUser) {
+            throw new Error("User must be authenticated to create an invite.");
+        }
+        if (!propertyId || !tenantEmail) {
+            throw new Error("Property ID and Tenant Email are required.");
+        }
+
+        const landlordUid = currentUser.uid;
+        const lowerCaseEmail = tenantEmail.toLowerCase(); // Normalize email
+
+        console.log(`Creating invite for ${lowerCaseEmail} to property ${propertyId} by landlord ${landlordUid}`);
+
+        // Optional: Check if a pending invite already exists for this email/property
+        try {
+             const invitesRef = collection(db, 'invites');
+             const q = query(invitesRef,
+                 where('propertyId', '==', propertyId),
+                 where('tenantEmail', '==', lowerCaseEmail),
+                 where('status', '==', 'pending')
+             );
+             const existingInvitesSnap = await getDocs(q);
+             if (!existingInvitesSnap.empty) {
+                 console.warn(`Pending invite already exists for ${lowerCaseEmail} to property ${propertyId}`);
+                 // You might want to throw an error or return the existing invite ID
+                 // throw new Error("A pending invitation already exists for this tenant and property.");
+                 return existingInvitesSnap.docs[0].id; // Or just return existing ID
+             }
+        } catch (checkError) {
+             console.error("Error checking for existing invites:", checkError);
+             // Decide if this should prevent creating a new invite
+        }
+
+
+        const inviteData = {
+            propertyId: propertyId,
+            tenantEmail: lowerCaseEmail,
+            landlordId: landlordUid,
+            status: 'pending',
+            createdAt: serverTimestamp(),
+            // Include names if provided, helps the notification trigger
+            propertyName: propertyName,
+            landlordName: landlordName || currentUser.displayName || 'Your Landlord',
+        };
+
+        try {
+            const invitesCollection = collection(db, 'invites');
+            const docRef = await addDoc(invitesCollection, inviteData);
+            console.log('Invite record created successfully in Firestore with ID:', docRef.id);
+            return docRef.id; // Return the new invite ID
+        } catch (err: unknown) {
+            console.error("Error creating invite record:", err);
+            // Normalize unknown error to string message
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            throw new Error(`Failed to create invitation record: ${errorMessage}`);
+        }
+    }
+};
+
+export default inviteService; 

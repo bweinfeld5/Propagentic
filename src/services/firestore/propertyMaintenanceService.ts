@@ -41,7 +41,7 @@ export async function removeMaintenanceRequestFromProperty(
     const activeRequests = propertySnapshot.data().activeRequests || [];
     
     await updateDoc(propertyRef, {
-      activeRequests: activeRequests.filter(id => id !== ticketId)
+      activeRequests: activeRequests.filter((id: string) => id !== ticketId)
     });
   }
 } 

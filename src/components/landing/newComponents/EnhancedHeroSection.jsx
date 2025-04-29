@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { SafeMotion, AnimatePresence } from '../../shared/SafeMotion';
 import EnhancedRoleSelector from './EnhancedRoleSelector';
-import StickyHeader from './StickyHeader';
 import { UIComponentErrorBoundary } from '../../shared/ErrorBoundary';
 import Button from '../../ui/Button';
 
@@ -94,8 +93,6 @@ const EnhancedHeroSection = () => {
             ))}
           </div>
         </div>
-        
-        <StickyHeader />
         
         {/* Hero content */}
         <div className="relative pt-32 pb-24 md:pt-40 md:pb-32">

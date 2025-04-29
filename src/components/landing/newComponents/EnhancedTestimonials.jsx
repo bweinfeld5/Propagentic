@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { SafeMotion, AnimatePresence } from "../../shared/SafeMotion";
 
 const testimonials = [
   {
@@ -85,7 +85,7 @@ const EnhancedTestimonials = () => {
           {/* Testimonial cards */}
           <div className="relative h-[380px] md:h-[320px]">
             <AnimatePresence mode="wait">
-              <motion.div
+              <SafeMotion.div
                 key={current}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -119,7 +119,7 @@ const EnhancedTestimonials = () => {
                     </blockquote>
                   </div>
                 </div>
-              </motion.div>
+              </SafeMotion.div>
             </AnimatePresence>
           </div>
           

@@ -16,8 +16,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { SafeDiv, motion } from './SafeMotion';
-import { AnimatePresence } from './SafeMotion';
+import { SafeMotion, AnimatePresence } from '../shared/SafeMotion';
 
 /**
  * SortableTaskList Component
@@ -42,7 +41,7 @@ const SortableTaskItem = ({ task, onTaskSelected, getStatusStyles, PriorityIndic
   };
 
   return (
-    <motion.li
+    <SafeMotion.li
       ref={setNodeRef}
       style={style}
       initial={{ opacity: 0, y: 20 }}
@@ -119,7 +118,7 @@ const SortableTaskItem = ({ task, onTaskSelected, getStatusStyles, PriorityIndic
           </div>
         )}
       </div>
-    </motion.li>
+    </SafeMotion.li>
   );
 };
 
@@ -230,7 +229,7 @@ const SortableTaskList = ({
   };
   
   const EmptyState = () => (
-    <motion.div 
+    <SafeMotion.div 
       className="flex flex-col items-center justify-center p-8 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/30"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -252,7 +251,7 @@ const SortableTaskList = ({
       <p className="text-gray-600 dark:text-gray-400 text-center">
         No tasks yet. Add your first task to get started.
       </p>
-    </motion.div>
+    </SafeMotion.div>
   );
   
   return (

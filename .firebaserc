@@ -1,5 +1,5 @@
 {
   "projects": {
-    "default": "propagentic"
+    "default": "propagentic" // TODO: Verify this is your correct Firebase project ID
   }
 }

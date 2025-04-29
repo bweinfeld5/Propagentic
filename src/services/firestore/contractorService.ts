@@ -13,7 +13,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { ContractorProfile, ContractorUser } from '../../models/schema';
-import { contractorProfileConverter } from '../../models/converters';
+import { contractorProfileConverter, landlordProfileConverter } from '../../models/converters';
 
 // Collection references
 const contractorProfilesCollection = collection(db, 'contractorProfiles').withConverter(contractorProfileConverter);
@@ -137,7 +137,7 @@ export async function addContractorToRolodex(
   landlordId: string,
   contractorId: string
 ): Promise<void> {
-  const landlordProfileRef = doc(db, 'landlordProfiles', landlordId);
+  const landlordProfileRef = doc(db, 'landlordProfiles', landlordId).withConverter(landlordProfileConverter);
   const landlordProfileSnapshot = await getDoc(landlordProfileRef);
   
   if (landlordProfileSnapshot.exists()) {
@@ -159,14 +159,14 @@ export async function removeContractorFromRolodex(
   landlordId: string,
   contractorId: string
 ): Promise<void> {
-  const landlordProfileRef = doc(db, 'landlordProfiles', landlordId);
+  const landlordProfileRef = doc(db, 'landlordProfiles', landlordId).withConverter(landlordProfileConverter);
   const landlordProfileSnapshot = await getDoc(landlordProfileRef);
   
   if (landlordProfileSnapshot.exists()) {
     const contractors = landlordProfileSnapshot.data().contractors || [];
     
     await updateDoc(landlordProfileRef, {
-      contractors: contractors.filter(id => id !== contractorId)
+      contractors: contractors.filter((id: string) => id !== contractorId)
     });
   }
 }

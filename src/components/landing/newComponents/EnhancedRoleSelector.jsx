@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { SafeMotion } from "../../shared/SafeMotion";
 
 const EnhancedRoleSelector = ({ roles, selectedRole, setSelectedRole }) => {
   // Helper function to get icon based on role - Updated Colors
@@ -52,7 +52,7 @@ const EnhancedRoleSelector = ({ roles, selectedRole, setSelectedRole }) => {
       {roles.map((role) => {
         const isSelected = selectedRole === role;
         return (
-          <motion.div
+          <SafeMotion.div
             key={role}
             role="radio"
             aria-checked={isSelected}
@@ -85,7 +85,7 @@ const EnhancedRoleSelector = ({ roles, selectedRole, setSelectedRole }) => {
                 </div>
                 
                 {isSelected && (
-                  <motion.div 
+                  <SafeMotion.div 
                     className="absolute -right-1 -top-1 bg-primary text-white p-1 rounded-full"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
@@ -94,7 +94,7 @@ const EnhancedRoleSelector = ({ roles, selectedRole, setSelectedRole }) => {
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
-                  </motion.div>
+                  </SafeMotion.div>
                 )}
               </div>
               
@@ -116,7 +116,7 @@ const EnhancedRoleSelector = ({ roles, selectedRole, setSelectedRole }) => {
             </div>
             
             {isSelected && (
-              <motion.div 
+              <SafeMotion.div 
                 className="absolute -bottom-2 left-1/2 transform -translate-x-1/2"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -125,9 +125,9 @@ const EnhancedRoleSelector = ({ roles, selectedRole, setSelectedRole }) => {
                 <svg width="24" height="12" viewBox="0 0 24 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 12L0 0H24L12 12Z" className="fill-current text-primary" /> {/* Use primary color */} 
                 </svg>
-              </motion.div>
+              </SafeMotion.div>
             )}
-          </motion.div>
+          </SafeMotion.div>
         );
       })}
     </div>

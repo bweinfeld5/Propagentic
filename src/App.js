@@ -1,13 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { NotificationProvider } from './components/shared/NotificationProvider';
-import ConnectionProvider from './context/ConnectionContext';
-import DemoModeProvider from './context/DemoModeContext';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
+import { ConnectionProvider } from './context/ConnectionContext';
+import { DemoModeProvider, useDemoMode } from './context/DemoModeContext';
 import DataServiceProvider from './providers/DataServiceProvider';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from './firebase/config';
+import LogoLoadingAnimation from './components/shared/LogoLoadingAnimation';
+// Comment out SafeMotion import which is causing problems
+// import { SafeMotion, AnimatePresence } from './components/shared/SafeMotion';
+// import SafeMotionDemo from './pages/SafeMotionDemo';
+import GlassyHeader from './components/layout/GlassyHeader';
+import DashboardSidebar from './components/layout/SidebarNav';
 
 // Pages & Components
 import LandingPage from './components/landing/LandingPage';
@@ -21,6 +28,10 @@ import LandlordTicketDashboard from './components/landlord/LandlordTicketDashboa
 import ContractorDashboard from './components/contractor/ContractorDashboard';
 import CreateLandlordProfile from './components/landlord/CreateLandlordProfile';
 
+// SVG Test Component
+import SVGTest from './components/branding/SVGTest';
+import BlueprintTest from './components/testing/BlueprintTest';
+
 // Existing Pages
 import MaintenanceFormPage from './pages/MaintenanceFormPage';
 import MyMaintenanceRequestsPage from './pages/MyMaintenanceRequestsPage';
@@ -33,11 +44,14 @@ import JobHistoryPage from './pages/JobHistoryPage';
 import ContractorProfilePage from './pages/ContractorProfilePage';
 import ProfilePage from './pages/ProfilePage';
 import NotificationsPage from './pages/NotificationsPage';
-import DashboardLayout from './components/layouts/DashboardLayout';
 import AuthPage from './pages/AuthPage';
-import EnhancedLandingPage from './components/landing/EnhancedLandingPage';
 import DemoPage from './pages/DemoPage';
 import AboutPage from './pages/AboutPage';
+import PropertiesPage from './pages/landlord/PropertiesPage';
+import TenantsPage from './pages/landlord/TenantsPage';
+import MaintenancePage from './pages/landlord/MaintenancePage';
+import SupportPage from './pages/SupportPage';
+import SettingsPage from './pages/SettingsPage';
 
 // AI Example Pages
 import AIExamples from './pages/AIExamples';
@@ -47,9 +61,6 @@ import AITutorial from './pages/AITutorial';
 import ComponentsShowcasePage from './pages/ComponentsShowcasePage';
 import TestUIComponents from './pages/TestUIComponents';
 import SimpleUIShowcase from './pages/SimpleUIShowcase';
-
-// Auth hook
-import { useAuth } from './context/AuthContext'; 
 
 // Route Guards
 const PrivateRoute = ({ children }) => {
@@ -143,7 +154,7 @@ const RoleBasedRedirect = () => {
   if (authLoading || profileLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-propagentic-teal"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary dark:border-primary-light"></div>
       </div>
     );
   }
@@ -152,109 +163,112 @@ const RoleBasedRedirect = () => {
   return null;
 };
 
-function App() {
+// Content layout that wraps page content
+const ContentLayout = ({ children }) => {
   return (
-    <AuthProvider>
-      <ConnectionProvider>
-        <DemoModeProvider>
-          <DataServiceProvider>
-            <NotificationProvider>
-              <Router>
-                <Routes>
-                  {/* Redirect root to new landing page */}
-                  <Route path="/" element={<Navigate to="/propagentic/new" replace />} />
+    <div className="flex-1 flex flex-col min-h-[calc(100vh-var(--header-height))]">
+      <main className="flex-1">
+        {children}
+      </main>
+    </div>
+  );
+};
 
-                  {/* New Landing Page */}
-                  <Route path="/propagentic/new" element={<EnhancedLandingPage />} />
+// Dashboard content layout with sidebar
+const DashboardContent = ({ children }) => {
+  const { isDemoMode } = useDemoMode ? useDemoMode() : { isDemoMode: false };
+  
+  return (
+    <div className="flex min-h-[calc(100vh-var(--header-height))]">
+      <DashboardSidebar />
+      <div className="flex-1 ml-0 md:ml-64">
+        {isDemoMode && (
+          <div className="bg-blue-500 text-white text-center py-1 px-4 text-sm font-medium">
+            DEMO MODE - No backend connection required
+          </div>
+        )}
+        <main className="p-4 md:p-6 bg-gray-100">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+};
 
-                  {/* Keep old landing page temporarily (optional, can be removed later) */}
-                  <Route path="/old-landing" element={<LandingPage />} />
+function App() {
+  const [loading, setLoading] = useState(true);
+  const [showContent, setShowContent] = useState(false);
+  
+  useEffect(() => {
+    // Check if this is the first visit
+    const hasVisitedBefore = localStorage.getItem('hasVisitedBefore');
+    
+    if (hasVisitedBefore === 'true') {
+      // If visited before, skip animation
+      setShowContent(true);
+      setLoading(false);
+    } else {
+      // Show loading animation for first-time visitors
+      // The LogoLoadingAnimation will call finishLoading when done
+      localStorage.setItem('hasVisitedBefore', 'true');
+    }
+  }, []);
+  
+  const finishLoading = () => {
+    // First set showContent to true while loading is still true
+    setShowContent(true);
+    // After a brief overlap for a smoother transition, remove the loader
+    setTimeout(() => setLoading(false), 800);
+  };
 
-                  {/* Public Routes */}
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/register" element={<RegisterPage />} />
-                  <Route path="/signup" element={<RegisterPage />} />
-                  <Route path="/signup/contractor" element={<RegisterPage initialRole="contractor" />} />
-                  <Route path="/signup/contractor-premium" element={<RegisterPage initialRole="contractor" isPremium={true} />} />
-                  <Route path="/pricing" element={<PricingPage />} />
-                  <Route path="/about" element={<AboutPage />} />
-                  <Route path="/contact-sales" element={<Navigate to="/pricing" state={{ openContactForm: true }} />} />
-                  <Route path="/demo" element={<DemoPage />} />
-                  
-                  {/* AI Example Pages */}
-                  <Route path="/ai-examples" element={<AIExamples />} />
-                  <Route path="/ai-tutorial" element={<AITutorial />} />
-                  
-                  {/* UI Components Showcase Pages */}
-                  <Route path="/ui-showcase" element={<ComponentsShowcasePage />} />
-                  <Route path="/test-ui" element={<TestUIComponents />} />
-                  <Route path="/ui-simple" element={<SimpleUIShowcase />} />
-
-                  {/* Onboarding Routes */}
-                  <Route path="/onboarding" element={
-                    <PrivateRoute>
-                      <OnboardingSurvey />
-                    </PrivateRoute>
-                  } />
-                  
-                  <Route path="/landlord-onboarding" element={
-                    <PrivateRoute>
-                      <LandlordOnboarding />
-                    </PrivateRoute>
-                  } />
-                  
-                  <Route path="/create-landlord-profile" element={
-                    <PrivateRoute>
-                      <CreateLandlordProfile />
-                    </PrivateRoute>
-                  } />
-                  
-                  <Route path="/contractor-onboarding" element={
-                    <PrivateRoute>
-                      <ContractorOnboardingPage />
-                    </PrivateRoute>
-                  } />
-                  
-                  {/* Protected Routes - Wrapped by DashboardLayout */}
-                  <Route element={<DashboardLayout />}>             
-                      {/* Profile Pages */}
-                      <Route path="/profile" element={<ProfilePage />} />
-                      <Route path="/contractor/profile" element={<ContractorProfilePage />} />
+  return (
+    <>
+      {loading && <LogoLoadingAnimation finishLoading={finishLoading} />}
+      
+      <div className={`transition-all duration-1000 ease-in-out ${
+        showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+      }`}>
+        <AuthProvider>
+          <ConnectionProvider>
+            <DemoModeProvider>
+              <DataServiceProvider>
+                <NotificationProvider>
+                  <Router>
+                    {/* The GlassyHeader is now a universal component rendered for all routes */}
+                    <GlassyHeader />
+                    
+                    <Routes>
+                      {/* Public routes */}
+                      <Route path="/" element={<Navigate to="/propagentic/new" replace />} />
+                      <Route path="/propagentic/new" element={<LandingPage />} />
+                      <Route path="/pricing" element={<PricingPage />} />
+                      <Route path="/about" element={<AboutPage />} />
+                      <Route path="/demo" element={<DemoPage />} />
+                      <Route path="/svg-test" element={<SVGTest />} />
+                      <Route path="/blueprint-test" element={<BlueprintTest />} />
                       
-                      {/* Notifications */}
-                      <Route path="/notifications" element={<NotificationsPage />} />
+                      {/* Authentication routes */}
+                      <Route path="/login" element={<LoginPage />} />
+                      <Route path="/register" element={<RegisterPage />} />
+                      <Route path="/signup" element={<RegisterPage />} />
+                      <Route path="/auth" element={<AuthPage />} />
                       
-                      {/* Role-based redirect */}
-                      <Route path="/dashboard" element={<RoleBasedRedirect />} />
-                      
-                      {/* Tenant Routes */}
-                      <Route path="/tenant/dashboard" element={<TenantDashboard />} />
-                      
-                      {/* Landlord Routes */}
-                      <Route path="/landlord/dashboard" element={<LandlordTicketDashboard />} />
-                      
-                      {/* Contractor Routes */}
-                      <Route path="/contractor/dashboard" element={<ContractorDashboard />} />
-                      <Route path="/contractor/jobs/:jobId" element={<JobDetailPage />} />
-                      <Route path="/contractor/history" element={<JobHistoryPage />} />
-                      
-                      {/* Maintenance Routes */}
-                      <Route path="/maintenance/new" element={<MaintenanceFormPage />} />
-                      <Route path="/maintenance/my-requests" element={<MyMaintenanceRequestsPage />} />
-                  </Route>
-                  
-                  {/* Auth Page */}
-                  <Route path="/auth" element={<AuthPage />} />
-                  
-                  {/* Fallback/Not Found - Redirect to login */}
-                  <Route path="*" element={<Navigate to="/login" />} />
-                </Routes>
-              </Router>
-            </NotificationProvider>
-          </DataServiceProvider>
-        </DemoModeProvider>
-      </ConnectionProvider>
-    </AuthProvider>
+                      {/* Fallback/Not Found - Redirect to login */}
+                      <Route path="*" element={<Navigate to="/login" />} />
+                    </Routes>
+                    
+                    {/* Debug indicator - always visible */}
+                    <div id="app-loaded" style={{ position: 'fixed', bottom: 0, right: 0, padding: '5px', background: 'rgba(0,0,0,0.1)', fontSize: '10px', zIndex: 9999, pointerEvents: 'none' }}>
+                      App Loaded
+                    </div>
+                  </Router>
+                </NotificationProvider>
+              </DataServiceProvider>
+            </DemoModeProvider>
+          </ConnectionProvider>
+        </AuthProvider>
+      </div>
+    </>
   );
 }
 

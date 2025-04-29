@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
-import { motion, useAnimation } from 'framer-motion';
+import { SafeMotion } from "../../shared/SafeMotion";
 
 const AnimatedStat = ({ value, suffix = '', label }) => {
   const [count, setCount] = useState(0);
@@ -46,7 +46,7 @@ const AnimatedStat = ({ value, suffix = '', label }) => {
   }
 
   return (
-    <motion.div
+    <SafeMotion.div
       ref={ref}
       initial={{ opacity: 0, y: 20 }}
       animate={controls}
@@ -58,7 +58,7 @@ const AnimatedStat = ({ value, suffix = '', label }) => {
       <div className="text-propagentic-slate dark:text-propagentic-neutral-light">
         {label}
       </div>
-    </motion.div>
+    </SafeMotion.div>
   );
 };
 

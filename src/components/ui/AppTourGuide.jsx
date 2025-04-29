@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Steps } from 'intro.js-react'; // Import the Steps component
-import { motion, AnimatePresence } from 'framer-motion';
 import 'intro.js/introjs.css'; // Import default Intro.js CSS
 // Optional: Import a theme CSS
 // import 'intro.js/themes/introjs-modern.css';
+import Button from './Button'; // Import Button component
+import { XMarkIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline'; // Import XMarkIcon and QuestionMarkCircleIcon
+import { SafeMotion, AnimatePresence } from "../shared/SafeMotion";
 
 /**
  * AppTourGuide Component (using intro.js-react)
@@ -110,29 +112,26 @@ const AppTourGuide = ({
       // Add more options as needed
   };
 
-  // Callout button component remains largely the same
+  // Callout button component using the new Button component
   const TourCallout = () => (
     <AnimatePresence>
       {showStartButton && (
-        <motion.div
+        <SafeMotion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.3 }}
           className={`fixed bottom-4 right-4 z-[10001] ${className}`} // High z-index
         >
-          <button
+          <Button
+            variant="primary" // Use primary theme color
+            size="md" // Example size
             onClick={startTour}
-            className="bg-propagentic-teal text-white px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2 hover:bg-propagentic-teal-dark transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-propagentic-teal"
-            // Style with primaryColor if needed via CSS or inline style
-            // style={{ backgroundColor: primaryColor }}
+            icon={<QuestionMarkCircleIcon className="w-5 h-5" />} // Use a suitable icon
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>Take a tour</span>
-          </button>
-        </motion.div>
+            Take a tour
+          </Button>
+        </SafeMotion.div>
       )}
     </AnimatePresence>
   );

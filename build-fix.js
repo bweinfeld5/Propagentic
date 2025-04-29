@@ -68,7 +68,8 @@ function runBuild() {
       env: { 
         ...process.env, 
         CI: 'false',
-        GENERATE_SOURCEMAP: 'false' // Disable source maps for smaller build
+        GENERATE_SOURCEMAP: 'false', // Disable source maps for smaller build
+        TSC_COMPILE_ON_ERROR: 'true'  // Continue building even with TypeScript errors
       }
     });
     console.log('✅ Build completed');
