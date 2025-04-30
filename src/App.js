@@ -15,6 +15,8 @@ import LogoLoadingAnimation from './components/shared/LogoLoadingAnimation';
 // import SafeMotionDemo from './pages/SafeMotionDemo';
 import GlassyHeader from './components/layout/GlassyHeader';
 import DashboardSidebar from './components/layout/SidebarNav';
+// Import our LocalStorageDebug component
+import LocalStorageDebug from './components/shared/LocalStorageDebug';
 
 // Pages & Components
 import LandingPage from './components/landing/LandingPage';
@@ -253,6 +255,17 @@ function App() {
                       <Route path="/signup" element={<RegisterPage />} />
                       <Route path="/auth" element={<AuthPage />} />
                       
+                      {/* User specific dashboard routes */}
+                      <Route path="/dashboard" element={<PrivateRoute><RoleBasedRedirect /></PrivateRoute>} />
+                      <Route path="/tenant/dashboard" element={<PrivateRoute><TenantDashboard /></PrivateRoute>} />
+                      <Route path="/landlord/dashboard" element={<PrivateRoute><LandlordDashboard /></PrivateRoute>} />
+                      <Route path="/contractor/dashboard" element={<PrivateRoute><ContractorDashboard /></PrivateRoute>} />
+                      
+                      {/* Onboarding routes */}
+                      <Route path="/onboarding" element={<PrivateRoute><OnboardingSurvey /></PrivateRoute>} />
+                      <Route path="/landlord-onboarding" element={<PrivateRoute><LandlordOnboarding /></PrivateRoute>} />
+                      <Route path="/contractor-onboarding" element={<PrivateRoute><ContractorOnboardingPage /></PrivateRoute>} />
+                      
                       {/* Fallback/Not Found - Redirect to login */}
                       <Route path="*" element={<Navigate to="/login" />} />
                     </Routes>
@@ -261,6 +274,9 @@ function App() {
                     <div id="app-loaded" style={{ position: 'fixed', bottom: 0, right: 0, padding: '5px', background: 'rgba(0,0,0,0.1)', fontSize: '10px', zIndex: 9999, pointerEvents: 'none' }}>
                       App Loaded
                     </div>
+                    
+                    {/* LocalStorageDebug - only visible in development */}
+                    <LocalStorageDebug />
                   </Router>
                 </NotificationProvider>
               </DataServiceProvider>

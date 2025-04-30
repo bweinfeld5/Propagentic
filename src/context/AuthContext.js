@@ -12,6 +12,13 @@ import { auth, db } from '../firebase/config';
 // Create Auth context
 const AuthContext = createContext();
 
+// User roles
+export const ROLES = {
+  LANDLORD: 'landlord',
+  TENANT: 'tenant',
+  CONTRACTOR: 'contractor'
+};
+
 // Auth context provider component
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -153,6 +160,43 @@ export const AuthProvider = ({ children }) => {
     return isContractor() && (userProfile?.isPremium === true || userProfile?.subscriptionTier === 'premium');
   };
 
+  // Complete onboarding for a user
+  const completeOnboarding = async (userId, onboardingData) => {
+    try {
+      const data = {
+        ...onboardingData,
+        onboardingComplete: true,
+        updatedAt: new Date().toISOString()
+      };
+      
+      await updateUserProfile(userId, data);
+      return true;
+    } catch (error) {
+      console.error("Error completing onboarding:", error);
+      throw error;
+    }
+  };
+
+  // Update user profile
+  const updateUserProfile = async (userId, data) => {
+    try {
+      await setDoc(doc(db, 'users', userId), data, { merge: true });
+      setUserProfile(prev => ({ ...prev, ...data }));
+      
+      // Update localStorage if needed
+      if (data) {
+        const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
+        localStorage.setItem('user', JSON.stringify({
+          ...userFromStorage,
+          ...data
+        }));
+      }
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      throw error;
+    }
+  };
+
   // Set up an auth state observer
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -163,15 +207,18 @@ export const AuthProvider = ({ children }) => {
         const profile = await fetchUserProfile(user.uid);
         setUserProfile(profile);
         
-        localStorage.setItem('user', JSON.stringify({
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          userType: profile?.userType,
-          onboardingComplete: profile?.onboardingComplete,
-          isPremium: profile?.isPremium,
-          subscriptionTier: profile?.subscriptionTier
-        }));
+        if (profile) {
+          localStorage.setItem('user', JSON.stringify({
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            userType: profile.userType,
+            role: profile.role,
+            onboardingComplete: profile.onboardingComplete,
+            isPremium: profile.isPremium,
+            subscriptionTier: profile.subscriptionTier
+          }));
+        }
         
         console.log('Auth state changed, user logged in with profile:', profile);
       } else {
@@ -196,10 +243,13 @@ export const AuthProvider = ({ children }) => {
     logout,
     resetPassword,
     fetchUserProfile,
+    updateUserProfile,
+    completeOnboarding,
     isLandlord,
     isTenant,
     isContractor,
-    isPremiumContractor
+    isPremiumContractor,
+    hasRole: (role) => userProfile?.role === role || userProfile?.userType === role
   };
 
   return (

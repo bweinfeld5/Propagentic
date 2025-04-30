@@ -50,29 +50,39 @@ const LoginPage = () => {
       const userProfile = await fetchUserProfile(user.uid);
       console.log('LoginPage - User profile loaded:', userProfile);
       
+      if (!userProfile) {
+        console.error('LoginPage - No user profile found in database');
+        setError('User profile not found. Please contact support.');
+        setLoading(false);
+        return;
+      }
+      
       // Get the user role from either userType or role field for backwards compatibility
-      const userRole = userProfile?.userType || userProfile?.role;
+      const userRole = userProfile.userType || userProfile.role;
+      console.log('LoginPage - User role detected:', userRole);
       
       // Redirect based on user type
       if (userRole) {
-        const redirectPath = `/${userRole}/dashboard`;
-        console.log(`LoginPage - Redirecting to: ${redirectPath}`);
+        let redirectPath = '';
         
         switch(userRole) {
           case 'tenant':
-            navigate('/tenant/dashboard');
+            redirectPath = '/tenant/dashboard';
             break;
           case 'landlord':
-            navigate('/landlord/dashboard');
+            redirectPath = '/landlord/dashboard';
             break;
           case 'contractor':
-            navigate('/contractor/dashboard');
+            redirectPath = '/contractor/dashboard';
             break;
           default:
-            navigate('/dashboard');
+            redirectPath = '/dashboard';
         }
+        
+        console.log(`LoginPage - Redirecting to: ${redirectPath}`);
+        navigate(redirectPath);
       } else {
-        console.log('LoginPage - No userType or role found, redirecting to default dashboard');
+        console.log('LoginPage - No userType or role found, redirecting to /dashboard');
         navigate('/dashboard');
       }
     } catch (error) {
